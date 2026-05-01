@@ -1,1 +1,10 @@
+cfl: 0.2
+tfinal: 0.401
+checkpoint_interval: 0.1
+dimension: 1
 num_zones: 20
+discontinuity: 0.5
+a_index: 1.4
+p: 1.0, 0.125
+rho: 1.0, 0.1
+v: 0.0, 0.0
