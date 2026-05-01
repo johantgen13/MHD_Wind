@@ -46,15 +46,17 @@ fn tot_energy_density(prim: Vec<f64>, a_index: f64) -> f64 {
 /////////////////////
 /// Usage Functions
 /////////////////////
-fn init_prim() -> Vec<Vec<f64>> {
-    let mut init_primitive = Vec::new();
+fn init_prim() -> [[f64; 3]; 20] {
+    let mut init_primitive: [[f64; 3]; 20] = [[0.0; 3] ; 20]; 
     for i in 0..20 {
         if i < 10 {
-            let vec_fill = vec![1.0, 1.0, 0.0];
-            init_primitive.push(vec_fill);
+            init_primitive[i][0] = 1.0;
+            init_primitive[i][1] = 1.0;
+            init_primitive[i][2] = 0.0;
         } else {
-            let vec_fill = vec![0.125, 0.1, 0.0];
-            init_primitive.push(vec_fill);
+            init_primitive[i][0] = 0.125;
+            init_primitive[i][1] = 0.1;
+            init_primitive[i][2] = 0.0;
         }
     }
     init_primitive
