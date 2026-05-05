@@ -10,6 +10,7 @@
     - hll flux
     - godonov flux
     - compute time step
+    - L function (incomplete)
 - Updated the CHANGELOG file.
 - Updated the README file.
 

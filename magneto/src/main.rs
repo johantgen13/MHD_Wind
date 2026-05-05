@@ -14,6 +14,7 @@
 const CELL_NUM: f64 = 20.0;
 const DISCON: f64 = 0.5;
 const DR: f64 = 1.0 / CELL_NUM;
+const ADIABATIC: f64 = 1.4;
 
 ////////////////
 // Dataclasses
@@ -120,15 +121,19 @@ fn hll_flux(prim_l: (f64, f64, f64), prim_r: (f64, f64, f64), a_index: f64) -> (
     hll
 }
 
-//fn godonov(prims_vec: Vec<(f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64)> {
-//    let mut go_vec = Vec::new();
-//    for i in 0..((CELL_NUM - 1.0) as u32) {
-//        let go_fill = hll_flux(prims_vec[i], prims_vec[i + (1 as u32)], a_index);
-//        go_vec.push(go_fill)
-//    }
-//    go_vec.push(hll_flux(prims_vec[((CELL_NUM - 2.0) as u32)], prims_vec[((CELL_NUM - 1.0) as u32)], a_index))
-//    go_vec
-//}
+fn godonov(prims_vec: Vec<(f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64)> {
+    let mut go_vec = Vec::new();
+    for i in 0..((CELL_NUM - 1.0) as u32) {
+        let index_1: usize = (i).try_into().unwrap();
+        let index_2: usize = (i+1).try_into().unwrap();
+        let go_fill = hll_flux(prims_vec[index_1], prims_vec[index_2], a_index);
+        go_vec.push(go_fill);
+    }
+    let index_a: usize = ((CELL_NUM - 2.0) as u32).try_into().unwrap();
+    let index_b: usize = ((CELL_NUM - 1.0) as u32).try_into().unwrap();
+    go_vec.push(hll_flux(prims_vec[index_a], prims_vec[index_b], a_index));
+    go_vec
+}
 
 fn compute_time_step(prim_l: (f64, f64, f64), prim_r: (f64, f64, f64), a_index: f64) -> f64 {
     let plus_l = p_eigen(prim_l.clone(), a_index);
@@ -150,6 +155,21 @@ fn compute_time_step(prim_l: (f64, f64, f64), prim_r: (f64, f64, f64), a_index: 
     dt
 }
 
+fn l_function(prims_vec: Vec<(f64, f64, f64)>, cons_vec: Vec<(f64, f64, f64)>, dt: f64) -> Vec<(f64, f64, f64)> {
+    let go_vec = godonov(prims_vec, ADIABATIC);
+    let mut new_cons_vec = Vec::new();
+    for i in 0..((CELL_NUM - 1.0) as u8) {
+        let index_1: usize = (i).try_into().unwrap();
+        let index_2: usize = (i+1).try_into().unwrap();
+        let new_0 = cons_vec[index_1].0 - (go_vec[index_2].0 - go_vec[index_1].0) * dt / DR;
+        let new_1 = cons_vec[index_1].1 - (go_vec[index_2].1 - go_vec[index_1].1) * dt / DR;
+        let new_2 = cons_vec[index_1].2 - (go_vec[index_2].2 - go_vec[index_1].2) * dt / DR;
+        let new_fill = (new_0, new_1, new_2);
+        new_cons_vec.push(new_fill);
+    }
+    new_cons_vec
+}
+
 ////////////////////
 // Usage Functions
 ////////////////////
@@ -157,9 +177,9 @@ fn init_prim() -> Vec<(f64, f64, f64)> {
     let mut init_primitive = Vec::new(); 
     for i in 0..(CELL_NUM as u8) {
         if i < ((CELL_NUM * DISCON) as u8) {
-            init_primitive.push((1.0, 1.0, 0.0))
+            init_primitive.push((1.0, 1.0, 0.0));
         } else {
-            init_primitive.push((0.125, 0.1, 0.0))
+            init_primitive.push((0.125, 0.1, 0.0));
         }
     }
     init_primitive
@@ -169,8 +189,24 @@ fn init_prim() -> Vec<(f64, f64, f64)> {
 // Simulation
 ///////////////
 fn main() {
-    let prim_vec = init_prim(); 
-    //let go_test = godonov(prim_vec, 1.4);
-    let time_test = compute_time_step(prim_vec[0], prim_vec[1], 1.4);
-    println!("{:?}", time_test);  
+    let prim_vec = init_prim();
+
+    let mut cons_vec = Vec::new();
+    for i in 0..(CELL_NUM as u8) {
+        let index: usize = (i).try_into().unwrap();
+        cons_vec.push(prim_to_cons(prim_vec[index], ADIABATIC));
+    } 
+
+    let mut dt = 1.0;
+    for i in 0..((CELL_NUM - 1.0) as u8) {
+        let index_1: usize = (i).try_into().unwrap();
+        let index_2: usize = (i+1).try_into().unwrap();
+        let dt_check = compute_time_step(prim_vec[index_1], prim_vec[index_2], ADIABATIC);
+        if dt_check < dt {
+            dt = dt_check;
+        }
+    }
+    println!("{:?}", dt);
+    let go_test = l_function(prim_vec, cons_vec, dt);
+    println!("{:?}", go_test);  
 }
