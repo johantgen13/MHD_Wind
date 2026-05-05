@@ -1,7 +1,7 @@
 // This is the rust file containing the 1D relativistic mhd simulation.
 // 
 // Author: Brayden JoHantgen
-// Last Update: 5/4/2026
+// Last Update: 5/5/2026
 
 //use std::fs;
 //use std::env;
@@ -120,6 +120,36 @@ fn hll_flux(prim_l: (f64, f64, f64), prim_r: (f64, f64, f64), a_index: f64) -> (
     hll
 }
 
+//fn godonov(prims_vec: Vec<(f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64)> {
+//    let mut go_vec = Vec::new();
+//    for i in 0..((CELL_NUM - 1.0) as u32) {
+//        let go_fill = hll_flux(prims_vec[i], prims_vec[i + (1 as u32)], a_index);
+//        go_vec.push(go_fill)
+//    }
+//    go_vec.push(hll_flux(prims_vec[((CELL_NUM - 2.0) as u32)], prims_vec[((CELL_NUM - 1.0) as u32)], a_index))
+//    go_vec
+//}
+
+fn compute_time_step(prim_l: (f64, f64, f64), prim_r: (f64, f64, f64), a_index: f64) -> f64 {
+    let plus_l = p_eigen(prim_l.clone(), a_index);
+    let minus_l = m_eigen(prim_l.clone(), a_index);
+
+    let plus_r = p_eigen(prim_r.clone(), a_index);
+    let minus_r = m_eigen(prim_r.clone(), a_index);
+
+    let a_plus = tuple_max((0.0, plus_l, plus_r));
+    let a_minus = tuple_max((0.0, -minus_l, -minus_r));
+
+    let mut dt: f64 = 0.0;
+
+    if a_minus > a_plus {
+        dt += DR / a_minus;
+    } else {
+        dt += DR / a_plus;
+    }    
+    dt
+}
+
 ////////////////////
 // Usage Functions
 ////////////////////
@@ -140,6 +170,7 @@ fn init_prim() -> Vec<(f64, f64, f64)> {
 ///////////////
 fn main() {
     let prim_vec = init_prim(); 
-    let hll_test = hll_flux(prim_vec[9], prim_vec[10], 1.4);
-    println!("{:?}", hll_test);  
+    //let go_test = godonov(prim_vec, 1.4);
+    let time_test = compute_time_step(prim_vec[0], prim_vec[1], 1.4);
+    println!("{:?}", time_test);  
 }

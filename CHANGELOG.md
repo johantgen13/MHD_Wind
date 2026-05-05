@@ -8,6 +8,8 @@
     - positive eigenvalue
     - negative eigenvalue
     - hll flux
+    - godonov flux
+    - compute time step
 - Updated the CHANGELOG file.
 - Updated the README file.
 
