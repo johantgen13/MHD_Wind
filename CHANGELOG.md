@@ -8,7 +8,8 @@
     - positive eigenvalue
     - negative eigenvalue
     - hll flux
-- Updated the CHANGELOG.
+- Updated the CHANGELOG file.
+- Updated the README file.
 
  ## May 4 2026
  - Began writing functions for a one dimensional hydrocode.
@@ -16,7 +17,7 @@
     - sound speed 
     - total energy density
     - intial primitive 
-- Created the CHANGELOG.
+- Created the CHANGELOG file.
 - Wrote the README description.
 
  ## May 1 2026
