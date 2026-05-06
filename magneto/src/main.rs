@@ -11,10 +11,12 @@
 /////////////////////
 // Useful Variables
 /////////////////////
-const CELL_NUM: f64 = 20.0;
+const CELL_NUM: f64 = 10.0;
 const DISCON: f64 = 0.5;
 const DR: f64 = 1.0 / CELL_NUM;
 const ADIABATIC: f64 = 1.4;
+const HIGH_ORDER: bool = false;
+const T_FINAL: f64 = 0.401;
 
 ////////////////
 // Dataclasses
@@ -37,6 +39,15 @@ const ADIABATIC: f64 = 1.4;
 ///////////////////
 // Math Functions
 ///////////////////
+
+/// Input: 
+///     tup: A tuple that contains three elements of type f64.
+/// Output: 
+///     The maximum value of the elements in the tuple, a float.
+/// Description: 
+///     This function converts the tuple to an array and then iterates over the elements of the array. 
+///     If an array/tuple element is larger than zero it is saved and compared to the rest of the 
+///     elements. The largest element is returned. This function will fail if all elements are negative.
 fn tuple_max(tup: (f64, f64, f64)) -> f64 {
     let arr = [tup.0, tup.1, tup.2];
     let mut max_check: f64 = 0.0;
@@ -48,7 +59,7 @@ fn tuple_max(tup: (f64, f64, f64)) -> f64 {
     max_check
 }
 
-fn specific_energy_gas(prim: (f64, f64, f64), a_index: f64) -> f64 {
+fn specific_energy_gas(prim: (f64, f64, f64), a_index: f64) -> f64 { 
     let e = prim.0 / ((a_index - 1.0) * prim.1);
     e
 }
@@ -123,6 +134,7 @@ fn hll_flux(prim_l: (f64, f64, f64), prim_r: (f64, f64, f64), a_index: f64) -> (
 
 fn godonov(prims_vec: Vec<(f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64)> {
     let mut go_vec = Vec::new();
+    go_vec.push(hll_flux(prims_vec[0], prims_vec[1], a_index));
     for i in 0..((CELL_NUM - 1.0) as u32) {
         let index_1: usize = (i).try_into().unwrap();
         let index_2: usize = (i+1).try_into().unwrap();
@@ -158,7 +170,7 @@ fn compute_time_step(prim_l: (f64, f64, f64), prim_r: (f64, f64, f64), a_index: 
 fn l_function(prims_vec: Vec<(f64, f64, f64)>, cons_vec: Vec<(f64, f64, f64)>, dt: f64) -> Vec<(f64, f64, f64)> {
     let go_vec = godonov(prims_vec, ADIABATIC);
     let mut new_cons_vec = Vec::new();
-    for i in 0..((CELL_NUM - 1.0) as u8) {
+    for i in 0..(CELL_NUM as u8) {
         let index_1: usize = (i).try_into().unwrap();
         let index_2: usize = (i+1).try_into().unwrap();
         let new_0 = cons_vec[index_1].0 - (go_vec[index_2].0 - go_vec[index_1].0) * dt / DR;
@@ -185,28 +197,56 @@ fn init_prim() -> Vec<(f64, f64, f64)> {
     init_primitive
 }
 
+fn cons_vec_from_prim(prims: Vec<(f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64)> {
+    let mut cons_vec = Vec::new();
+    for i in 0..(CELL_NUM as u8) {
+        let index: usize = (i).try_into().unwrap();
+        cons_vec.push(prim_to_cons(prims[index], a_index));
+    }
+    cons_vec
+}
+
+fn prim_vec_from_cons(cons: Vec<(f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64)> {
+    let mut prims_vec = Vec::new();
+    for i in 0..(CELL_NUM as u8) {
+        let index: usize = (i).try_into().unwrap();
+        prims_vec.push(cons_to_prim(cons[index], a_index));
+    }
+    prims_vec
+}
+
+//fn rk_time_step(cons_vec: Vec<(f64, f64, f64)>, dt: f64) -> Vec<(f64, f64, f64)> {
+
+//}
+
 ///////////////
 // Simulation
 ///////////////
 fn main() {
-    let prim_vec = init_prim();
+    let mut t: f64 = 0.0;
+    let initial_primitives = init_prim();
+    let mut conserved_vec = cons_vec_from_prim(initial_primitives.clone(), ADIABATIC);
 
-    let mut cons_vec = Vec::new();
-    for i in 0..(CELL_NUM as u8) {
-        let index: usize = (i).try_into().unwrap();
-        cons_vec.push(prim_to_cons(prim_vec[index], ADIABATIC));
-    } 
+    while t < T_FINAL {
+        let primitives = prim_vec_from_cons(conserved_vec, ADIABATIC);
+        let conserve = cons_vec_from_prim(primitives.clone(), ADIABATIC);
 
-    let mut dt = 1.0;
-    for i in 0..((CELL_NUM - 1.0) as u8) {
-        let index_1: usize = (i).try_into().unwrap();
-        let index_2: usize = (i+1).try_into().unwrap();
-        let dt_check = compute_time_step(prim_vec[index_1], prim_vec[index_2], ADIABATIC);
-        if dt_check < dt {
-            dt = dt_check;
+        let mut dt = 1.0;
+        for i in 0..((CELL_NUM - 1.0) as u8) {
+            let index_1: usize = (i).try_into().unwrap();
+            let index_2: usize = (i+1).try_into().unwrap();
+            let dt_check = compute_time_step(primitives[index_1], primitives[index_2], ADIABATIC);
+            if dt_check < dt {
+                dt = dt_check;
+            }
         }
+        conserved_vec = l_function(primitives.clone(), conserve, dt);
+
+        println!("First Cell: {:?}", primitives[0]);
+        println!("Middle Cell: {:?}", primitives[5]);
+        println!("Last Cell: {:?}", primitives[9]);
+
+        t += dt;
     }
-    println!("{:?}", dt);
-    let go_test = l_function(prim_vec, cons_vec, dt);
-    println!("{:?}", go_test);  
-}
+    
+} 

@@ -1,3 +1,12 @@
+ ## May 6 2026
+ - Wrote the following functions.
+    - Conserved Vector Build
+    - Primitive Vector build from the conserved vector
+    - main containing the simulation
+ - Finished the L function.
+ - Fixed a bug in the godonov flux function.
+ - Updated the CHANGELOG file.
+ 
  ## May 5 2026
  - Continuing to write one dimensional hydrocode functions.
     - tuple max
@@ -11,6 +20,8 @@
     - godonov flux
     - compute time step
     - L function (incomplete)
+- Wrote a Doc String for the following function.
+    - tuple max
 - Updated the CHANGELOG file.
 - Updated the README file.
 
