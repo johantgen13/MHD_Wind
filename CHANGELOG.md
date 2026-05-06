@@ -3,6 +3,7 @@
     - Conserved Vector Build
     - Primitive Vector build from the conserved vector
     - main containing the simulation
+    - write checkpoint (incomplete)
  - Finished the L function.
  - Fixed a bug in the godonov flux function.
  - Updated the CHANGELOG file.

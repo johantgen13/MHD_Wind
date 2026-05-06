@@ -3,20 +3,25 @@
 // Author: Brayden JoHantgen
 // Last Update: 5/5/2026
 
-//use std::fs;
+use std::fs;
+use std::io::{BufWriter, Write};
+use std::path::Path;
 //use std::env;
 
-#![allow(dead_code)]
+//#![allow(dead_code)]
 
 /////////////////////
 // Useful Variables
 /////////////////////
-const CELL_NUM: f64 = 10.0;
+const CELL_NUM: f64 = 100.0;
 const DISCON: f64 = 0.5;
 const DR: f64 = 1.0 / CELL_NUM;
 const ADIABATIC: f64 = 1.4;
 const HIGH_ORDER: bool = false;
 const T_FINAL: f64 = 0.401;
+const CHECK_INTERVAL: f64 = 0.025;
+const CFL: f64 = 0.2;
+//const SOLUTION: String = "First Order";
 
 ////////////////
 // Dataclasses
@@ -219,11 +224,44 @@ fn prim_vec_from_cons(cons: Vec<(f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64
 
 //}
 
+fn write_checkpoint(prims: Vec<(f64, f64, f64)>, t: f64, check_count: i8) -> Result<(), Box<dyn std::error::Error>> {
+    let file_num = check_count.to_string();
+    let file_type = ".txt".to_string();
+    let file_name = format!("{}{}", file_num, file_type);
+    let output_file_path = Path::new(&file_name);
+
+    let t_fill = format!("{} {}", "t:".to_string(), t.to_string());
+
+    let mut p_vec = Vec::new();
+    for i in 0..(CELL_NUM as u8) {
+        let index: usize = (i).try_into().unwrap();
+        p_vec.push(prims[index].0);
+    }
+
+    let p_fill = format!("{} {}", "p:".to_string(), p_vec.to_string());
+ 
+    let file = fs::OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open(output_file_path)?;
+
+    let mut writer = BufWriter::new(file);
+
+    writeln!(writer, "{}", t_fill)?;
+    writeln!(writer, "{}", p_fill)?;
+    writer.flush()?;
+
+    Ok(())
+}
+
 ///////////////
 // Simulation
 ///////////////
 fn main() {
     let mut t: f64 = 0.0;
+    let mut t_checkpoint = CHECK_INTERVAL;
+    let mut check_count: i8 = 0;
+
     let initial_primitives = init_prim();
     let mut conserved_vec = cons_vec_from_prim(initial_primitives.clone(), ADIABATIC);
 
@@ -240,11 +278,15 @@ fn main() {
                 dt = dt_check;
             }
         }
+        dt = CFL * dt;
+
         conserved_vec = l_function(primitives.clone(), conserve, dt);
 
-        println!("First Cell: {:?}", primitives[0]);
-        println!("Middle Cell: {:?}", primitives[5]);
-        println!("Last Cell: {:?}", primitives[9]);
+        if t >= t_checkpoint {
+            write_checkpoint(primitives.clone(), t, check_count);
+            t_checkpoint += CHECK_INTERVAL;
+            check_count += 1;
+        }
 
         t += dt;
     }
