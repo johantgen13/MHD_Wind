@@ -1,7 +1,7 @@
 // This is the rust file containing the 1D relativistic mhd simulation.
 // 
 // Author: Brayden JoHantgen
-// Last Update: 5/5/2026
+// Last Update: 5/7/2026
 
 use std::fs;
 use std::io::{BufWriter, Write};
@@ -228,17 +228,24 @@ fn write_checkpoint(prims: Vec<(f64, f64, f64)>, t: f64, check_count: i8) -> Res
     let file_num = check_count.to_string();
     let file_type = ".txt".to_string();
     let file_name = format!("{}{}", file_num, file_type);
-    let output_file_path = Path::new(&file_name);
+    let file_path = "time_step_files/".to_string() + &file_name;
+    let output_file_path = Path::new(&file_path);
 
     let t_fill = format!("{} {}", "t:".to_string(), t.to_string());
 
-    let mut p_vec = Vec::new();
-    for i in 0..(CELL_NUM as u8) {
-        let index: usize = (i).try_into().unwrap();
-        p_vec.push(prims[index].0);
-    }
+    let mut p_string = "p: ".to_string();
+    let mut rho_string = "rho: ".to_string();
+    let mut v_string = "v: ".to_string();
+    for i in prims {
+        let p_fill = i.0.to_string() + &" ".to_string();
+        p_string.push_str(&p_fill);
 
-    let p_fill = format!("{} {}", "p:".to_string(), p_vec.to_string());
+        let rho_fill = i.1.to_string() + &" ".to_string();
+        rho_string.push_str(&rho_fill);
+
+        let v_fill = i.2.to_string() + &" ".to_string();
+        v_string.push_str(&v_fill);
+    }
  
     let file = fs::OpenOptions::new()
         .append(true)
@@ -248,7 +255,9 @@ fn write_checkpoint(prims: Vec<(f64, f64, f64)>, t: f64, check_count: i8) -> Res
     let mut writer = BufWriter::new(file);
 
     writeln!(writer, "{}", t_fill)?;
-    writeln!(writer, "{}", p_fill)?;
+    writeln!(writer, "{}", p_string)?;
+    writeln!(writer, "{}", rho_string)?;
+    writeln!(writer, "{}", v_string)?;
     writer.flush()?;
 
     Ok(())
@@ -283,7 +292,7 @@ fn main() {
         conserved_vec = l_function(primitives.clone(), conserve, dt);
 
         if t >= t_checkpoint {
-            write_checkpoint(primitives.clone(), t, check_count);
+            let _ = write_checkpoint(primitives.clone(), t, check_count);
             t_checkpoint += CHECK_INTERVAL;
             check_count += 1;
         }

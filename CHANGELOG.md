@@ -1,3 +1,7 @@
+ ## May 7 2026
+ - Finished the write checkpoint function.
+ - Updated the CHANGELOG file.
+ 
  ## May 6 2026
  - Wrote the following functions.
     - Conserved Vector Build
