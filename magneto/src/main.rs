@@ -3,17 +3,17 @@
 // Author: Brayden JoHantgen
 // Last Update: 5/7/2026
 
+//#![allow(dead_code)]
+
 use std::fs;
 use std::io::{BufWriter, Write};
 use std::path::Path;
 //use std::env;
 
-//#![allow(dead_code)]
-
 /////////////////////
 // Useful Variables
 /////////////////////
-const CELL_NUM: f64 = 100.0;
+const CELL_NUM: f64 = 10.0;
 const DISCON: f64 = 0.5;
 const DR: f64 = 1.0 / CELL_NUM;
 const ADIABATIC: f64 = 1.4;
@@ -21,7 +21,6 @@ const HIGH_ORDER: bool = false;
 const T_FINAL: f64 = 0.401;
 const CHECK_INTERVAL: f64 = 0.025;
 const CFL: f64 = 0.2;
-//const SOLUTION: String = "First Order";
 
 ////////////////
 // Dataclasses
@@ -62,6 +61,17 @@ fn tuple_max(tup: (f64, f64, f64)) -> f64 {
         }
     }
     max_check
+}
+
+fn tuple_min(tup: (f64, f64, f64)) -> f64 {
+    let arr = [tup.0, tup.1, tup.2];
+    let mut min_check = tuple_max(tup);
+    for i in 0..3 {
+        if arr[i] < min_check {
+            min_check = arr[i]
+        }
+    }
+    min_check
 }
 
 fn specific_energy_gas(prim: (f64, f64, f64), a_index: f64) -> f64 { 
@@ -116,6 +126,27 @@ fn m_eigen(prim: (f64, f64, f64), a_index: f64) -> f64 {
     min_eigen
 }
 
+fn sgn(num: f64) -> f64 {
+    let mut sign: f64;
+    if num > 0.0 {
+        sign = 1.0;
+    } else if num < 0.0 {
+        sign = -1.0;
+    }
+    else {
+        sign = 0.0;
+    }
+    sign
+}
+
+fn minmod(x: f64, y: f64, z: f64) -> f64 {
+    let mm_1 = (sgn(x) + sgn(y)).abs();
+    let mm_2 = sgn(x) + sgn(z);
+    let mm_3 = tuple_min((x.abs(), y.abs(), z.abs()));
+    let mm = 0.25 * mm_1 * mm_2 * mm_3;
+    mm
+}
+
 fn hll_flux(prim_l: (f64, f64, f64), prim_r: (f64, f64, f64), a_index: f64) -> (f64, f64, f64) {
     let plus_l = p_eigen(prim_l.clone(), a_index);
     let minus_l = m_eigen(prim_l.clone(), a_index);
@@ -137,18 +168,63 @@ fn hll_flux(prim_l: (f64, f64, f64), prim_r: (f64, f64, f64), a_index: f64) -> (
     hll
 }
 
+fn high_order_hll_flux(prim_1: (f64, f64, f64), prim_2: (f64, f64, f64), prim_3: (f64, f64, f64), prim_4: (f64, f64, f64), a_index: f64) -> (f64, f64, f64) {
+    let p_l = prim_2.0 + 0.5 * minmod((1.5 * (prim_2.0 - prim_1.0)), (0.5 * (prim_3.0 - prim_1.0)), (1.5 * (prim_3.0 - prim_2.0)));
+    let rho_l = prim_2.1 + 0.5 * minmod((1.5 * (prim_2.1 - prim_1.1)), (0.5 * (prim_3.1 - prim_1.1)), (1.5 * (prim_3.1 - prim_2.1)));
+    let v_l = prim_2.2 + 0.5 * minmod((1.5 * (prim_2.2 - prim_1.2)), (0.5 * (prim_3.2 - prim_1.2)), (1.5 * (prim_3.2 - prim_2.2)));
+    let prim_left = (p_l, rho_l, v_l);
+
+    let plus_l = p_eigen(prim_left.clone(), a_index);
+    let minus_l = m_eigen(prim_left.clone(), a_index);
+    let u_l = prim_to_cons(prim_left.clone(), a_index);
+    let f_l = flux(prim_left.clone(), a_index);
+
+    let p_r = prim_3.0 - 0.5 * minmod((1.5 * (prim_3.0 - prim_2.0)), (0.5 * (prim_4.0 - prim_2.0)), (1.5 * (prim_4.0 - prim_3.0)));
+    let rho_r = prim_3.1 - 0.5 * minmod((1.5 * (prim_3.1 - prim_2.1)), (0.5 * (prim_4.1 - prim_2.1)), (1.5 * (prim_4.1 - prim_3.1)));
+    let v_r = prim_3.2 - 0.5 * minmod((1.5 * (prim_3.2 - prim_2.2)), (0.5 * (prim_4.2 - prim_2.2)), (1.5 * (prim_4.2 - prim_3.2)));
+    let prim_right = (p_r, rho_r, v_r);
+
+    let plus_r = p_eigen(prim_right.clone(), a_index);
+    let minus_r = m_eigen(prim_right.clone(), a_index);
+    let u_r = prim_to_cons(prim_right.clone(), a_index);
+    let f_r = flux(prim_right.clone(), a_index);
+
+    let a_plus = tuple_max((0.0, plus_l, plus_r));
+    let a_minus = tuple_max((0.0, -minus_l, -minus_r));
+
+    let hll_0 = ((a_plus * f_l.0) + (a_minus * f_r.0) - (a_plus * a_minus * (u_r.0 - u_l.0))) / (a_minus + a_plus);
+    let hll_1 = ((a_plus * f_l.1) + (a_minus * f_r.1) - (a_plus * a_minus * (u_r.1 - u_l.1))) / (a_minus + a_plus);
+    let hll_2 = ((a_plus * f_l.2) + (a_minus * f_r.2) - (a_plus * a_minus * (u_r.2 - u_l.2))) / (a_minus + a_plus);
+    let hll = (hll_0, hll_1, hll_2);
+    hll
+}
+
 fn godonov(prims_vec: Vec<(f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64)> {
     let mut go_vec = Vec::new();
     go_vec.push(hll_flux(prims_vec[0], prims_vec[1], a_index));
-    for i in 0..((CELL_NUM - 1.0) as u32) {
-        let index_1: usize = (i).try_into().unwrap();
-        let index_2: usize = (i+1).try_into().unwrap();
-        let go_fill = hll_flux(prims_vec[index_1], prims_vec[index_2], a_index);
-        go_vec.push(go_fill);
+    if HIGH_ORDER == false {
+        for i in 0..((CELL_NUM - 1.0) as u8) {
+            let index_1: usize = (i).try_into().unwrap();
+            let index_2: usize = (i+1).try_into().unwrap();
+            let go_fill = hll_flux(prims_vec[index_1], prims_vec[index_2], a_index);
+            go_vec.push(go_fill);
+        }
+        let index_a: usize = ((CELL_NUM - 2.0) as u8).try_into().unwrap();
+        let index_b: usize = ((CELL_NUM - 1.0) as u8).try_into().unwrap();
+        go_vec.push(hll_flux(prims_vec[index_a], prims_vec[index_b], a_index));
+    } else {
+        for i in 1..(CELL_NUM as u8) {
+            let index_1: usize = (i-1).try_into().unwrap();
+            let index_2: usize = (i).try_into().unwrap();
+            let index_3: usize = (i+1).try_into().unwrap();
+            let index_4: usize = (i+2).try_into().unwrap();
+            let go_fill = high_order_hll_flux(prims_vec[index_1], prims_vec[index_2], prims_vec[index_3], prims_vec[index_4], a_index);
+            go_vec.push(go_fill);
+        }
+        let index_a: usize = (CELL_NUM as u8).try_into().unwrap();
+        let index_b: usize = ((CELL_NUM + 1.0) as u8).try_into().unwrap();
+        go_vec.push(hll_flux(prims_vec[index_a], prims_vec[index_b], a_index));
     }
-    let index_a: usize = ((CELL_NUM - 2.0) as u32).try_into().unwrap();
-    let index_b: usize = ((CELL_NUM - 1.0) as u32).try_into().unwrap();
-    go_vec.push(hll_flux(prims_vec[index_a], prims_vec[index_b], a_index));
     go_vec
 }
 
@@ -173,8 +249,8 @@ fn compute_time_step(prim_l: (f64, f64, f64), prim_r: (f64, f64, f64), a_index: 
 }
 
 fn l_function(prims_vec: Vec<(f64, f64, f64)>, cons_vec: Vec<(f64, f64, f64)>, dt: f64) -> Vec<(f64, f64, f64)> {
-    let go_vec = godonov(prims_vec, ADIABATIC);
     let mut new_cons_vec = Vec::new();
+    let go_vec = godonov(prims_vec, ADIABATIC);
     for i in 0..(CELL_NUM as u8) {
         let index_1: usize = (i).try_into().unwrap();
         let index_2: usize = (i+1).try_into().unwrap();
@@ -191,12 +267,22 @@ fn l_function(prims_vec: Vec<(f64, f64, f64)>, cons_vec: Vec<(f64, f64, f64)>, d
 // Usage Functions
 ////////////////////
 fn init_prim() -> Vec<(f64, f64, f64)> {
-    let mut init_primitive = Vec::new(); 
-    for i in 0..(CELL_NUM as u8) {
-        if i < ((CELL_NUM * DISCON) as u8) {
-            init_primitive.push((1.0, 1.0, 0.0));
-        } else {
-            init_primitive.push((0.125, 0.1, 0.0));
+    let mut init_primitive = Vec::new();
+    if HIGH_ORDER != true { 
+        for i in 0..(CELL_NUM as u8) {
+            if i < ((CELL_NUM * DISCON) as u8) {
+                init_primitive.push((1.0, 1.0, 0.0));
+            } else {
+                init_primitive.push((0.125, 0.1, 0.0));
+            }
+        }
+    } else {
+        for i in 0..((CELL_NUM + 2.0) as u8) {
+            if i < (((CELL_NUM * DISCON) + 1.0) as u8) {
+                init_primitive.push((1.0, 1.0, 0.0));
+            } else {
+                init_primitive.push((0.125, 0.1, 0.0));
+            }
         }
     }
     init_primitive
@@ -220,9 +306,41 @@ fn prim_vec_from_cons(cons: Vec<(f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64
     prims_vec
 }
 
-//fn rk_time_step(cons_vec: Vec<(f64, f64, f64)>, dt: f64) -> Vec<(f64, f64, f64)> {
+fn rk_time_step(prims_vec: Vec<(f64, f64, f64)>, cons_vec: Vec<(f64, f64, f64)>, dt: f64) -> Vec<(f64, f64, f64)> {
+    let l_cons = l_function(prims_vec.clone(), cons_vec.clone(), dt);
+    let mut cons_1 = Vec::new();
+    for i in 0..(CELL_NUM as u8) {
+        let index: usize = (i).try_into().unwrap();
+        let fill_0 = cons_vec[index].0 + dt * l_cons[index].0;
+        let fill_1 = cons_vec[index].1 + dt * l_cons[index].1;
+        let fill_2 = cons_vec[index].2 + dt * l_cons[index].2;
+        let fill = (fill_0, fill_1, fill_2);
+        cons_1.push(fill);
+    }
 
-//}
+    let l_cons_1 = l_function(prims_vec.clone(), cons_1.clone(), dt);
+    let mut cons_2 = Vec::new();
+    for i in 0..(CELL_NUM as u8) {
+        let index: usize = (i).try_into().unwrap();
+        let fill_0 = 0.75 * cons_vec[index].0 + 0.25 * cons_1[index].0 + 0.25 * dt * l_cons_1[index].0;
+        let fill_1 = 0.75 * cons_vec[index].1 + 0.25 * cons_1[index].1 + 0.25 * dt * l_cons_1[index].1;
+        let fill_2 = 0.75 * cons_vec[index].2 + 0.25 * cons_1[index].2 + 0.25 * dt * l_cons_1[index].2;
+        let fill = (fill_0, fill_1, fill_2);
+        cons_2.push(fill);
+    }
+
+    let l_cons_2 = l_function(prims_vec.clone(), cons_2.clone(), dt);
+    let mut new_cons = Vec::new();
+    for i in 0..(CELL_NUM as u8) {
+        let index: usize = (i).try_into().unwrap();
+        let fill_0 = 0.33 * cons_vec[index].0 + 0.67 * cons_2[index].0 + 0.67 * dt * l_cons_2[index].0;
+        let fill_1 = 0.33 * cons_vec[index].1 + 0.67 * cons_2[index].1 + 0.67 * dt * l_cons_2[index].1;
+        let fill_2 = 0.33 * cons_vec[index].2 + 0.67 * cons_2[index].2 + 0.67 * dt * l_cons_2[index].2;
+        let fill = (fill_0, fill_1, fill_2);
+        new_cons.push(fill);
+    }
+    new_cons
+}
 
 fn write_checkpoint(prims: Vec<(f64, f64, f64)>, t: f64, check_count: i8) -> Result<(), Box<dyn std::error::Error>> {
     let file_num = check_count.to_string();
@@ -233,7 +351,7 @@ fn write_checkpoint(prims: Vec<(f64, f64, f64)>, t: f64, check_count: i8) -> Res
 
     let t_fill = format!("{} {}", "t:".to_string(), &(t.to_string()+&" ".to_string()));
 
-    let mut num_fill = format!("{} {}", "cell_num:".to_string(), &(CELL_NUM.to_string()+&" ".to_string()));
+    let num_fill = format!("{} {}", "cell_num:".to_string(), &(CELL_NUM.to_string()+&" ".to_string()));
 
     let mut p_string = "p: ".to_string();
     let mut rho_string = "rho: ".to_string();
@@ -270,37 +388,40 @@ fn write_checkpoint(prims: Vec<(f64, f64, f64)>, t: f64, check_count: i8) -> Res
 // Simulation
 ///////////////
 fn main() {
-    let mut t: f64 = 0.0;
-    let mut t_checkpoint = CHECK_INTERVAL;
-    let mut check_count: i8 = 0;
+//    let mut t: f64 = 0.0;
+//    let mut t_checkpoint = CHECK_INTERVAL;
+//    let mut check_count: i8 = 0;
 
     let initial_primitives = init_prim();
     let mut conserved_vec = cons_vec_from_prim(initial_primitives.clone(), ADIABATIC);
 
-    while t < T_FINAL {
-        let primitives = prim_vec_from_cons(conserved_vec, ADIABATIC);
-        let conserve = cons_vec_from_prim(primitives.clone(), ADIABATIC);
-
-        let mut dt = 1.0;
-        for i in 0..((CELL_NUM - 1.0) as u8) {
-            let index_1: usize = (i).try_into().unwrap();
-            let index_2: usize = (i+1).try_into().unwrap();
-            let dt_check = compute_time_step(primitives[index_1], primitives[index_2], ADIABATIC);
-            if dt_check < dt {
-                dt = dt_check;
-            }
-        }
-        dt = CFL * dt;
-
-        conserved_vec = l_function(primitives.clone(), conserve, dt);
-
-        if t >= t_checkpoint {
-            let _ = write_checkpoint(primitives.clone(), t, check_count);
-            t_checkpoint += CHECK_INTERVAL;
-            check_count += 1;
-        }
-
-        t += dt;
-    }
-    
+//
+//    while t < T_FINAL {
+//        let primitives = prim_vec_from_cons(conserved_vec, ADIABATIC);
+//        let conserve = cons_vec_from_prim(primitives.clone(), ADIABATIC);
+//
+//        let mut dt = 1.0;
+//        for i in 0..((CELL_NUM - 1.0) as u8) {
+//            let index_1: usize = (i).try_into().unwrap();
+//            let index_2: usize = (i+1).try_into().unwrap();
+//            let dt_check = compute_time_step(primitives[index_1], primitives[index_2], ADIABATIC);
+//            if dt_check < dt {
+//                dt = dt_check;
+//            }
+//        }
+//        dt = CFL * dt;
+//
+//        if HIGH_ORDER == true {
+//            conserved_vec = rk_time_step(primitives.clone(), conserve, dt);
+//        } else {
+//            conserved_vec = l_function(primitives.clone(), conserve, dt);
+//        }
+//        
+//        if t >= t_checkpoint {
+//            let _ = write_checkpoint(primitives.clone(), t, check_count);
+//            t_checkpoint += CHECK_INTERVAL;
+//            check_count += 1;
+//        }
+//        t += dt;
+//    }
 } 

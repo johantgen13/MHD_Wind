@@ -1,13 +1,20 @@
  ## May 7 2026
+ - Began implementation of the higher order solution.
  - Wrote the following functions for the rust simulation.
+    - tuple min
+    - sign
+    - rk4 step
     - minmod
+    - high order hll flux
  - Finished the write checkpoint function.
  - Created a folder in the magneto folder to hold the checkpoint txt files.
- - Began writing the animatior python file to animate the data from the simulation. This includes hte following functions.
+ - Wrote the animation file in python to animate the data from the simulation. This includes the following functions.
     - plot params
     - line num 
     - read txt files
+    - animation function to animate each individual frame
  - Updated the CHANGELOG file.
+ - Updated the README file.
  
  ## May 6 2026
  - Wrote the following functions.
