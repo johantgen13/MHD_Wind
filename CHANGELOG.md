@@ -1,5 +1,12 @@
  ## May 7 2026
+ - Wrote the following functions for the rust simulation.
+    - minmod
  - Finished the write checkpoint function.
+ - Created a folder in the magneto folder to hold the checkpoint txt files.
+ - Began writing the animatior python file to animate the data from the simulation. This includes hte following functions.
+    - plot params
+    - line num 
+    - read txt files
  - Updated the CHANGELOG file.
  
  ## May 6 2026

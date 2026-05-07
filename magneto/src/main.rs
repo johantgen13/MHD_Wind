@@ -231,7 +231,9 @@ fn write_checkpoint(prims: Vec<(f64, f64, f64)>, t: f64, check_count: i8) -> Res
     let file_path = "time_step_files/".to_string() + &file_name;
     let output_file_path = Path::new(&file_path);
 
-    let t_fill = format!("{} {}", "t:".to_string(), t.to_string());
+    let t_fill = format!("{} {}", "t:".to_string(), &(t.to_string()+&" ".to_string()));
+
+    let mut num_fill = format!("{} {}", "cell_num:".to_string(), &(CELL_NUM.to_string()+&" ".to_string()));
 
     let mut p_string = "p: ".to_string();
     let mut rho_string = "rho: ".to_string();
@@ -254,6 +256,7 @@ fn write_checkpoint(prims: Vec<(f64, f64, f64)>, t: f64, check_count: i8) -> Res
 
     let mut writer = BufWriter::new(file);
 
+    writeln!(writer, "{}", num_fill)?;
     writeln!(writer, "{}", t_fill)?;
     writeln!(writer, "{}", p_string)?;
     writeln!(writer, "{}", rho_string)?;
