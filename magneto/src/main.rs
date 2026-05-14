@@ -1,7 +1,7 @@
 // This is the rust file containing the 1D relativistic mhd simulation.
 // 
 // Author: Brayden JoHantgen
-// Last Update: 5/7/2026
+// Last Update: 5/14/2026
 
 //#![allow(dead_code)]
 
@@ -17,10 +17,9 @@ const CELL_NUM: f64 = 10.0;
 const DISCON: f64 = 0.5;
 const DR: f64 = 1.0 / CELL_NUM;
 const ADIABATIC: f64 = 1.4;
-const HIGH_ORDER: bool = false;
 const T_FINAL: f64 = 0.401;
 const CHECK_INTERVAL: f64 = 0.025;
-const CFL: f64 = 0.2;
+const CFL: f64 = 0.5;
 
 ////////////////
 // Dataclasses
@@ -168,63 +167,18 @@ fn hll_flux(prim_l: (f64, f64, f64), prim_r: (f64, f64, f64), a_index: f64) -> (
     hll
 }
 
-fn high_order_hll_flux(prim_1: (f64, f64, f64), prim_2: (f64, f64, f64), prim_3: (f64, f64, f64), prim_4: (f64, f64, f64), a_index: f64) -> (f64, f64, f64) {
-    let p_l = prim_2.0 + 0.5 * minmod((1.5 * (prim_2.0 - prim_1.0)), (0.5 * (prim_3.0 - prim_1.0)), (1.5 * (prim_3.0 - prim_2.0)));
-    let rho_l = prim_2.1 + 0.5 * minmod((1.5 * (prim_2.1 - prim_1.1)), (0.5 * (prim_3.1 - prim_1.1)), (1.5 * (prim_3.1 - prim_2.1)));
-    let v_l = prim_2.2 + 0.5 * minmod((1.5 * (prim_2.2 - prim_1.2)), (0.5 * (prim_3.2 - prim_1.2)), (1.5 * (prim_3.2 - prim_2.2)));
-    let prim_left = (p_l, rho_l, v_l);
-
-    let plus_l = p_eigen(prim_left.clone(), a_index);
-    let minus_l = m_eigen(prim_left.clone(), a_index);
-    let u_l = prim_to_cons(prim_left.clone(), a_index);
-    let f_l = flux(prim_left.clone(), a_index);
-
-    let p_r = prim_3.0 - 0.5 * minmod((1.5 * (prim_3.0 - prim_2.0)), (0.5 * (prim_4.0 - prim_2.0)), (1.5 * (prim_4.0 - prim_3.0)));
-    let rho_r = prim_3.1 - 0.5 * minmod((1.5 * (prim_3.1 - prim_2.1)), (0.5 * (prim_4.1 - prim_2.1)), (1.5 * (prim_4.1 - prim_3.1)));
-    let v_r = prim_3.2 - 0.5 * minmod((1.5 * (prim_3.2 - prim_2.2)), (0.5 * (prim_4.2 - prim_2.2)), (1.5 * (prim_4.2 - prim_3.2)));
-    let prim_right = (p_r, rho_r, v_r);
-
-    let plus_r = p_eigen(prim_right.clone(), a_index);
-    let minus_r = m_eigen(prim_right.clone(), a_index);
-    let u_r = prim_to_cons(prim_right.clone(), a_index);
-    let f_r = flux(prim_right.clone(), a_index);
-
-    let a_plus = tuple_max((0.0, plus_l, plus_r));
-    let a_minus = tuple_max((0.0, -minus_l, -minus_r));
-
-    let hll_0 = ((a_plus * f_l.0) + (a_minus * f_r.0) - (a_plus * a_minus * (u_r.0 - u_l.0))) / (a_minus + a_plus);
-    let hll_1 = ((a_plus * f_l.1) + (a_minus * f_r.1) - (a_plus * a_minus * (u_r.1 - u_l.1))) / (a_minus + a_plus);
-    let hll_2 = ((a_plus * f_l.2) + (a_minus * f_r.2) - (a_plus * a_minus * (u_r.2 - u_l.2))) / (a_minus + a_plus);
-    let hll = (hll_0, hll_1, hll_2);
-    hll
-}
-
 fn godonov(prims_vec: Vec<(f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64)> {
     let mut go_vec = Vec::new();
     go_vec.push(hll_flux(prims_vec[0], prims_vec[1], a_index));
-    if HIGH_ORDER == false {
-        for i in 0..((CELL_NUM - 1.0) as u8) {
-            let index_1: usize = (i).try_into().unwrap();
-            let index_2: usize = (i+1).try_into().unwrap();
-            let go_fill = hll_flux(prims_vec[index_1], prims_vec[index_2], a_index);
-            go_vec.push(go_fill);
-        }
-        let index_a: usize = ((CELL_NUM - 2.0) as u8).try_into().unwrap();
-        let index_b: usize = ((CELL_NUM - 1.0) as u8).try_into().unwrap();
-        go_vec.push(hll_flux(prims_vec[index_a], prims_vec[index_b], a_index));
-    } else {
-        for i in 1..(CELL_NUM as u8) {
-            let index_1: usize = (i-1).try_into().unwrap();
-            let index_2: usize = (i).try_into().unwrap();
-            let index_3: usize = (i+1).try_into().unwrap();
-            let index_4: usize = (i+2).try_into().unwrap();
-            let go_fill = high_order_hll_flux(prims_vec[index_1], prims_vec[index_2], prims_vec[index_3], prims_vec[index_4], a_index);
-            go_vec.push(go_fill);
-        }
-        let index_a: usize = (CELL_NUM as u8).try_into().unwrap();
-        let index_b: usize = ((CELL_NUM + 1.0) as u8).try_into().unwrap();
-        go_vec.push(hll_flux(prims_vec[index_a], prims_vec[index_b], a_index));
+    for i in 0..((CELL_NUM - 1.0) as u8) {
+        let index_1: usize = (i).try_into().unwrap();
+        let index_2: usize = (i+1).try_into().unwrap();
+        let go_fill = hll_flux(prims_vec[index_1], prims_vec[index_2], a_index);
+        go_vec.push(go_fill);
     }
+    let index_a: usize = ((CELL_NUM - 2.0) as u8).try_into().unwrap();
+    let index_b: usize = ((CELL_NUM - 1.0) as u8).try_into().unwrap();
+    go_vec.push(hll_flux(prims_vec[index_a], prims_vec[index_b], a_index));
     go_vec
 }
 
