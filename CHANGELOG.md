@@ -1,3 +1,7 @@
+ ## May 15 2026
+ - Paused implementation of the higher order solution.
+ - Began implementation of MHD.
+ 
  ## May 7 2026
  - Began implementation of the higher order solution.
  - Wrote the following functions for the rust simulation.
