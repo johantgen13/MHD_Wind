@@ -3,9 +3,22 @@
  - Began implementation of MHD. The following functions were written or modified:
    - initial params (location: main.rs)
    - lorentz factor (location: math_functions.rs)
+   - b_zero (location: math_functions.rs)
+   - b_x (location: math_functions.rs)
+   - b_y (location: math_functions.rs)
+   - b_square (location: math_functions.rs)
+   - specific_energy_gas (location: math_functions.rs)
+   - sound_speed (location: math_functions.rs)
+   - specific_energy_total (location: math_functions.rs)
+   - total_pressure (location: math_functions.rs)
+   - specific_enthalpy (location: math_functions.rs)
+   - momentum_density_x (location: math_functions.rs)
+   - momentum_density_y (location: math_functions.rs)
+   - total_energy_density (location: math_functions.rs)
  - Documentation has been written for the following functions:
    - initial params (location: main.rs)
    - lorentz factor (location: math_functions.rs)
+   - b_zero (location: math_functions.rs)
  - Seperation of the simulation into multiple files.
  - Created the math_functions.rs file.
  - Updated the CHANGELOG file.
