@@ -1,6 +1,7 @@
  ## May 15 2026
  - Paused implementation of the higher order solution.
- - Began implementation of MHD.
+ - Began implementation of MHD. The following functions were written or modified:
+   - initial params
  
  ## May 7 2026
  - Began implementation of the higher order solution.
