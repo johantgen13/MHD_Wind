@@ -5,21 +5,23 @@
 
 //#![allow(dead_code)]
 
-use std::fs;
-use std::io::{BufWriter, Write};
-use std::path::Path;
+// use std::fs;
+//use std::io::{BufWriter, Write};
+//use std::path::Path;
 //use std::env;
+
+pub mod math_functions;
 
 /////////////////////
 // Useful Variables
 /////////////////////
 const CELL_NUM: f64 = 10.0;
 const DISCON: f64 = 0.5;
-const DR: f64 = 1.0 / CELL_NUM;
-const ADIABATIC: f64 = 1.4;
-const T_FINAL: f64 = 0.401;
-const CHECK_INTERVAL: f64 = 0.025;
-const CFL: f64 = 0.5;
+//const DR: f64 = 1.0 / CELL_NUM;
+//const ADIABATIC: f64 = 1.4;
+//const T_FINAL: f64 = 0.401;
+//const CHECK_INTERVAL: f64 = 0.025;
+//const CFL: f64 = 0.5;
 
 ////////////////
 // Dataclasses
@@ -37,265 +39,276 @@ const CFL: f64 = 0.5;
 ///     This function converts the tuple to an array and then iterates over the elements of the array. 
 ///     If an array/tuple element is larger than zero it is saved and compared to the rest of the 
 ///     elements. The largest element is returned. This function will fail if all elements are negative.
-fn tuple_max(tup: (f64, f64, f64)) -> f64 {
-    let arr = [tup.0, tup.1, tup.2];
-    let mut max_check: f64 = 0.0;
-    for i in 0..3 {
-        if arr[i] > max_check {
-            max_check = arr[i];
-        }
-    }
-    max_check
-}
+//fn tuple_max(tup: (f64, f64, f64)) -> f64 {
+//    let arr = [tup.0, tup.1, tup.2];
+//    let mut max_check: f64 = 0.0;
+//    for i in 0..3 {
+//        if arr[i] > max_check {
+//            max_check = arr[i];
+//        }
+//    }
+//    max_check
+//}
 
-fn tuple_min(tup: (f64, f64, f64)) -> f64 {
-    let arr = [tup.0, tup.1, tup.2];
-    let mut min_check = tuple_max(tup);
-    for i in 0..3 {
-        if arr[i] < min_check {
-            min_check = arr[i]
-        }
-    }
-    min_check
-}
+//fn tuple_min(tup: (f64, f64, f64)) -> f64 {
+//    let arr = [tup.0, tup.1, tup.2];
+//    let mut min_check = tuple_max(tup);
+//    for i in 0..3 {
+//        if arr[i] < min_check {
+//            min_check = arr[i]
+//        }
+//    }
+//    min_check
+//}
 
-fn specific_energy_gas(prim: (f64, f64, f64), a_index: f64) -> f64 { 
-    let e = prim.0 / ((a_index - 1.0) * prim.1);
-    e
-}
+//fn specific_energy_gas(prim: (f64, f64, f64), a_index: f64) -> f64 { 
+//    let e = prim.0 / ((a_index - 1.0) * prim.1);
+//    e
+//}
 
-fn sound_speed(prim: (f64, f64, f64), a_index: f64) -> f64 {
-    let cs = ((a_index * prim.0) / prim.1).sqrt();
-    cs
-}
+//fn sound_speed(prim: (f64, f64, f64), a_index: f64) -> f64 {
+//    let cs = ((a_index * prim.0) / prim.1).sqrt();
+//    cs
+//}
 
-fn tot_energy_density(prim: (f64, f64, f64), a_index: f64) -> f64 {
-    let e = specific_energy_gas(prim.clone(), a_index);
-    let energy = prim.1 * e + (0.5) * prim.1 * (prim.2 * prim.2);
-    energy
-}
+//fn tot_energy_density(prim: (f64, f64, f64), a_index: f64) -> f64 {
+//    let e = specific_energy_gas(prim.clone(), a_index);
+//    let energy = prim.1 * e + (0.5) * prim.1 * (prim.2 * prim.2);
+//    energy
+//}
 
-fn inverse_energy_density(energy: f64, rho: f64, v: f64, a_index: f64) -> f64 {
-    let pressure = (a_index - 1.0) * (energy - 0.5 * rho * v * v);
-    pressure
-}
+//fn inverse_energy_density(energy: f64, rho: f64, v: f64, a_index: f64) -> f64 {
+//    let pressure = (a_index - 1.0) * (energy - 0.5 * rho * v * v);
+//    pressure
+//}
 
-fn prim_to_cons(prim: (f64, f64, f64), a_index: f64) -> (f64, f64, f64) {
-    let energy_density = tot_energy_density(prim.clone(), a_index);
-    let cons = (prim.1, (prim.1 * prim.2), energy_density);
-    cons
-}
+//fn prim_to_cons(prim: (f64, f64, f64), a_index: f64) -> (f64, f64, f64) {
+//    let energy_density = tot_energy_density(prim.clone(), a_index);
+//    let cons = (prim.1, (prim.1 * prim.2), energy_density);
+//    cons
+//}
 
-fn cons_to_prim(cons: (f64, f64, f64), a_index: f64) -> (f64, f64, f64) {
-    let v = cons.1 / cons.0;
-    let pressure = inverse_energy_density(cons.2, cons.0, v, a_index);
-    let prim = (pressure, cons.0, v);
-    prim
-}
+//fn cons_to_prim(cons: (f64, f64, f64), a_index: f64) -> (f64, f64, f64) {
+//    let v = cons.1 / cons.0;
+//    let pressure = inverse_energy_density(cons.2, cons.0, v, a_index);
+//    let prim = (pressure, cons.0, v);
+//    prim
+//}
 
-fn flux(prim: (f64, f64, f64), a_index: f64) -> (f64, f64, f64) {
-    let energy = tot_energy_density(prim.clone(), a_index);
-    let cell_flux = ((prim.1 * prim.2), ((prim.1 * prim.2 * prim.2) + prim.0), ((energy + prim.0) * prim.2));
-    cell_flux
-}
+//fn flux(prim: (f64, f64, f64), a_index: f64) -> (f64, f64, f64) {
+//    let energy = tot_energy_density(prim.clone(), a_index);
+//    let cell_flux = ((prim.1 * prim.2), ((prim.1 * prim.2 * prim.2) + prim.0), ((energy + prim.0) * prim.2));
+//    cell_flux
+//}
 
-fn p_eigen(prim: (f64, f64, f64), a_index: f64) -> f64 {
-    let cs = sound_speed(prim.clone(), a_index);
-    let max_eigen = prim.2 + cs;
-    max_eigen
-}
+//fn p_eigen(prim: (f64, f64, f64), a_index: f64) -> f64 {
+//    let cs = sound_speed(prim.clone(), a_index);
+//    let max_eigen = prim.2 + cs;
+//    max_eigen
+//}
 
-fn m_eigen(prim: (f64, f64, f64), a_index: f64) -> f64 {
-    let cs = sound_speed(prim.clone(), a_index);
-    let min_eigen = prim.2 - cs;
-    min_eigen
-}
+//fn m_eigen(prim: (f64, f64, f64), a_index: f64) -> f64 {
+//    let cs = sound_speed(prim.clone(), a_index);
+//   let min_eigen = prim.2 - cs;
+//    min_eigen
+//}
 
-fn sgn(num: f64) -> f64 {
-    let mut sign: f64;
-    if num > 0.0 {
-        sign = 1.0;
-    } else if num < 0.0 {
-        sign = -1.0;
-    }
-    else {
-        sign = 0.0;
-    }
-    sign
-}
+//fn sgn(num: f64) -> f64 {
+//    let mut sign: f64;
+//    if num > 0.0 {
+//        sign = 1.0;
+//    } else if num < 0.0 {
+//        sign = -1.0;
+//    }
+//    else {
+//        sign = 0.0;
+//    }
+//    sign
+//}
 
-fn minmod(x: f64, y: f64, z: f64) -> f64 {
-    let mm_1 = (sgn(x) + sgn(y)).abs();
-    let mm_2 = sgn(x) + sgn(z);
-    let mm_3 = tuple_min((x.abs(), y.abs(), z.abs()));
-    let mm = 0.25 * mm_1 * mm_2 * mm_3;
-    mm
-}
+//fn minmod(x: f64, y: f64, z: f64) -> f64 {
+//    let mm_1 = (sgn(x) + sgn(y)).abs();
+//    let mm_2 = sgn(x) + sgn(z);
+//    let mm_3 = tuple_min((x.abs(), y.abs(), z.abs()));
+//    let mm = 0.25 * mm_1 * mm_2 * mm_3;
+//    mm
+//}
 
-fn hll_flux(prim_l: (f64, f64, f64), prim_r: (f64, f64, f64), a_index: f64) -> (f64, f64, f64) {
-    let plus_l = p_eigen(prim_l.clone(), a_index);
-    let minus_l = m_eigen(prim_l.clone(), a_index);
-    let u_l = prim_to_cons(prim_l.clone(), a_index);
-    let f_l = flux(prim_l.clone(), a_index);
+//fn hll_flux(prim_l: (f64, f64, f64), prim_r: (f64, f64, f64), a_index: f64) -> (f64, f64, f64) {
+//    let plus_l = p_eigen(prim_l.clone(), a_index);
+//    let minus_l = m_eigen(prim_l.clone(), a_index);
+//    let u_l = prim_to_cons(prim_l.clone(), a_index);
+//    let f_l = flux(prim_l.clone(), a_index);
 
-    let plus_r = p_eigen(prim_r.clone(), a_index);
-    let minus_r = m_eigen(prim_r.clone(), a_index);
-    let u_r = prim_to_cons(prim_r.clone(), a_index);
-    let f_r = flux(prim_r.clone(), a_index);
+//    let plus_r = p_eigen(prim_r.clone(), a_index);
+//    let minus_r = m_eigen(prim_r.clone(), a_index);
+//    let u_r = prim_to_cons(prim_r.clone(), a_index);
+//    let f_r = flux(prim_r.clone(), a_index);
 
-    let a_plus = tuple_max((0.0, plus_l, plus_r));
-    let a_minus = tuple_max((0.0, -minus_l, -minus_r));
+//    let a_plus = tuple_max((0.0, plus_l, plus_r));
+//    let a_minus = tuple_max((0.0, -minus_l, -minus_r));
 
-    let hll_0 = ((a_plus * f_l.0) + (a_minus * f_r.0) - (a_plus * a_minus * (u_r.0 - u_l.0))) / (a_minus + a_plus);
-    let hll_1 = ((a_plus * f_l.1) + (a_minus * f_r.1) - (a_plus * a_minus * (u_r.1 - u_l.1))) / (a_minus + a_plus);
-    let hll_2 = ((a_plus * f_l.2) + (a_minus * f_r.2) - (a_plus * a_minus * (u_r.2 - u_l.2))) / (a_minus + a_plus);
-    let hll = (hll_0, hll_1, hll_2);
-    hll
-}
+//    let hll_0 = ((a_plus * f_l.0) + (a_minus * f_r.0) - (a_plus * a_minus * (u_r.0 - u_l.0))) / (a_minus + a_plus);
+//    let hll_1 = ((a_plus * f_l.1) + (a_minus * f_r.1) - (a_plus * a_minus * (u_r.1 - u_l.1))) / (a_minus + a_plus);
+//    let hll_2 = ((a_plus * f_l.2) + (a_minus * f_r.2) - (a_plus * a_minus * (u_r.2 - u_l.2))) / (a_minus + a_plus);
+//    let hll = (hll_0, hll_1, hll_2);
+//    hll
+//}
 
-fn godonov(prims_vec: Vec<(f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64)> {
-    let mut go_vec = Vec::new();
-    go_vec.push(hll_flux(prims_vec[0], prims_vec[1], a_index));
-    for i in 0..((CELL_NUM - 1.0) as u8) {
-        let index_1: usize = (i).try_into().unwrap();
-        let index_2: usize = (i+1).try_into().unwrap();
-        let go_fill = hll_flux(prims_vec[index_1], prims_vec[index_2], a_index);
-        go_vec.push(go_fill);
-    }
-    let index_a: usize = ((CELL_NUM - 2.0) as u8).try_into().unwrap();
-    let index_b: usize = ((CELL_NUM - 1.0) as u8).try_into().unwrap();
-    go_vec.push(hll_flux(prims_vec[index_a], prims_vec[index_b], a_index));
-    go_vec
-}
+//fn godonov(prims_vec: Vec<(f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64)> {
+//    let mut go_vec = Vec::new();
+//    go_vec.push(hll_flux(prims_vec[0], prims_vec[1], a_index));
+//    for i in 0..((CELL_NUM - 1.0) as u8) {
+//        let index_1: usize = (i).try_into().unwrap();
+//        let index_2: usize = (i+1).try_into().unwrap();
+//        let go_fill = hll_flux(prims_vec[index_1], prims_vec[index_2], a_index);
+//        go_vec.push(go_fill);
+//    }
+//    let index_a: usize = ((CELL_NUM - 2.0) as u8).try_into().unwrap();
+//    let index_b: usize = ((CELL_NUM - 1.0) as u8).try_into().unwrap();
+//    go_vec.push(hll_flux(prims_vec[index_a], prims_vec[index_b], a_index));
+//    go_vec
+//}
 
-fn compute_time_step(prim_l: (f64, f64, f64), prim_r: (f64, f64, f64), a_index: f64) -> f64 {
-    let plus_l = p_eigen(prim_l.clone(), a_index);
-    let minus_l = m_eigen(prim_l.clone(), a_index);
+//fn compute_time_step(prim_l: (f64, f64, f64), prim_r: (f64, f64, f64), a_index: f64) -> f64 {
+//    let plus_l = p_eigen(prim_l.clone(), a_index);
+//    let minus_l = m_eigen(prim_l.clone(), a_index);
 
-    let plus_r = p_eigen(prim_r.clone(), a_index);
-    let minus_r = m_eigen(prim_r.clone(), a_index);
+//    let plus_r = p_eigen(prim_r.clone(), a_index);
+//    let minus_r = m_eigen(prim_r.clone(), a_index);
 
-    let a_plus = tuple_max((0.0, plus_l, plus_r));
-    let a_minus = tuple_max((0.0, -minus_l, -minus_r));
+//    let a_plus = tuple_max((0.0, plus_l, plus_r));
+//    let a_minus = tuple_max((0.0, -minus_l, -minus_r));
 
-    let mut dt: f64 = 0.0;
+//    let mut dt: f64 = 0.0;
 
-    if a_minus > a_plus {
-        dt += DR / a_minus;
-    } else {
-        dt += DR / a_plus;
-    }    
-    dt
-}
+//    if a_minus > a_plus {
+//        dt += DR / a_minus;
+//    } else {
+//        dt += DR / a_plus;
+//    }    
+//    dt
+//}
 
-fn l_function(prims_vec: Vec<(f64, f64, f64)>, cons_vec: Vec<(f64, f64, f64)>, dt: f64) -> Vec<(f64, f64, f64)> {
-    let mut new_cons_vec = Vec::new();
-    let go_vec = godonov(prims_vec, ADIABATIC);
-    for i in 0..(CELL_NUM as u8) {
-        let index_1: usize = (i).try_into().unwrap();
-        let index_2: usize = (i+1).try_into().unwrap();
-        let new_0 = cons_vec[index_1].0 - (go_vec[index_2].0 - go_vec[index_1].0) * dt / DR;
-        let new_1 = cons_vec[index_1].1 - (go_vec[index_2].1 - go_vec[index_1].1) * dt / DR;
-        let new_2 = cons_vec[index_1].2 - (go_vec[index_2].2 - go_vec[index_1].2) * dt / DR;
-        let new_fill = (new_0, new_1, new_2);
-        new_cons_vec.push(new_fill);
-    }
-    new_cons_vec
-}
+//fn l_function(prims_vec: Vec<(f64, f64, f64)>, cons_vec: Vec<(f64, f64, f64)>, dt: f64) -> Vec<(f64, f64, f64)> {
+//    let mut new_cons_vec = Vec::new();
+//    let go_vec = godonov(prims_vec, ADIABATIC);
+//    for i in 0..(CELL_NUM as u8) {
+//        let index_1: usize = (i).try_into().unwrap();
+//        let index_2: usize = (i+1).try_into().unwrap();
+//        let new_0 = cons_vec[index_1].0 - (go_vec[index_2].0 - go_vec[index_1].0) * dt / DR;
+//        let new_1 = cons_vec[index_1].1 - (go_vec[index_2].1 - go_vec[index_1].1) * dt / DR;
+//        let new_2 = cons_vec[index_1].2 - (go_vec[index_2].2 - go_vec[index_1].2) * dt / DR;
+//        let new_fill = (new_0, new_1, new_2);
+//        new_cons_vec.push(new_fill);
+//    }
+//    new_cons_vec
+//}
 
 ////////////////////
 // Usage Functions
 ////////////////////
-fn init_prim() -> Vec<(f64, f64, f64)> {
+
+/// Input:
+///     There is no input for this function.
+/// Output:
+///     init_primitive: this is a vector with six f64 components which
+///         correspont to P, rho, v_x, v_y, B_x, B_y.
+/// Description:
+///     This function uses the values for the cell numbers and the location
+///     of the discontinuity to write the primitive variables for the defined
+///     grid. This function depends on the read_config function.
+fn init_prim() -> Vec<(f64, f64, f64, f64, f64, f64)> {
     let mut init_primitive = Vec::new();
-    for i in 0..((CELL_NUM + 2.0) as u8) {
-        if i < (((CELL_NUM * DISCON) + 1.0) as u8) {
-            init_primitive.push((1.0, 1.0, 0.0));
+    for i in 0..(CELL_NUM as u8) {
+        if i < ((CELL_NUM * DISCON) as u8) {
+            init_primitive.push((1.0, 1.0, 0.0, 0.0, 0.5, 1.0));
         } else {
-            init_primitive.push((0.125, 0.1, 0.0));
+            init_primitive.push((0.125, 0.1, 0.0, 0.0, 0.5, -1.0));
         }
     }
     init_primitive
 }
 
-fn cons_vec_from_prim(prims: Vec<(f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64)> {
-    let mut cons_vec = Vec::new();
-    for i in 0..(CELL_NUM as u8) {
-        let index: usize = (i).try_into().unwrap();
-        cons_vec.push(prim_to_cons(prims[index], a_index));
-    }
-    cons_vec
-}
+//fn cons_vec_from_prim(prims: Vec<(f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64)> {
+//    let mut cons_vec = Vec::new();
+//    for i in 0..(CELL_NUM as u8) {
+//        let index: usize = (i).try_into().unwrap();
+//        cons_vec.push(prim_to_cons(prims[index], a_index));
+//    }
+//    cons_vec
+//}
 
-fn prim_vec_from_cons(cons: Vec<(f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64)> {
-    let mut prims_vec = Vec::new();
-    for i in 0..(CELL_NUM as u8) {
-        let index: usize = (i).try_into().unwrap();
-        prims_vec.push(cons_to_prim(cons[index], a_index));
-    }
-    prims_vec
-}
+//fn prim_vec_from_cons(cons: Vec<(f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64)> {
+//    let mut prims_vec = Vec::new();
+//    for i in 0..(CELL_NUM as u8) {
+//        let index: usize = (i).try_into().unwrap();
+//        prims_vec.push(cons_to_prim(cons[index], a_index));
+//    }
+//    prims_vec
+//}
 
-fn read_config() {
-    let file_path = "/Users/toogan13/Desktop/MHD_Wind/magneto_config.txt".to_string();
-    let file = fs::read_to_string(&file_path);
-    let file_rows: Vec<&str> = file.split('\n').collect();
+//fn read_config() {
+//    let file_path = "/Users/toogan13/Desktop/MHD_Wind/magneto_config.txt".to_string();
+//    let file = fs::read_to_string(&file_path);
+//    let breaking = file.expect("REASON");
+//    let file_rows: Vec<&str> = breaking.split('\n').collect();
+//
+//    println!("{:?}", file_rows);
+//}
 
-    println!("{:?}", file_rows);
-}
-
-fn write_checkpoint(prims: Vec<(f64, f64, f64)>, t: f64, check_count: i8) -> Result<(), Box<dyn std::error::Error>> {
-    let file_num = check_count.to_string();
-    let file_type = ".txt".to_string();
-    let file_name = format!("{}{}", file_num, file_type);
-    let file_path = "time_step_files/".to_string() + &file_name;
-    let output_file_path = Path::new(&file_path);
-
-    let t_fill = format!("{} {}", "t:".to_string(), &(t.to_string()+&" ".to_string()));
-
-    let num_fill = format!("{} {}", "cell_num:".to_string(), &(CELL_NUM.to_string()+&" ".to_string()));
-
-    let mut p_string = "p: ".to_string();
-    let mut rho_string = "rho: ".to_string();
-    let mut v_string = "v: ".to_string();
-    for i in prims {
-        let p_fill = i.0.to_string() + &" ".to_string();
-        p_string.push_str(&p_fill);
-
-        let rho_fill = i.1.to_string() + &" ".to_string();
-        rho_string.push_str(&rho_fill);
-
-        let v_fill = i.2.to_string() + &" ".to_string();
-        v_string.push_str(&v_fill);
-    }
- 
-    let file = fs::OpenOptions::new()
-        .append(true)
-        .create(true)
-        .open(output_file_path)?;
-
-    let mut writer = BufWriter::new(file);
-
-    writeln!(writer, "{}", num_fill)?;
-    writeln!(writer, "{}", t_fill)?;
-    writeln!(writer, "{}", p_string)?;
-    writeln!(writer, "{}", rho_string)?;
-    writeln!(writer, "{}", v_string)?;
-    writer.flush()?;
-
-    Ok(())
-}
+//fn write_checkpoint(prims: Vec<(f64, f64, f64)>, t: f64, check_count: i8) -> Result<(), Box<dyn std::error::Error>> {
+//    let file_num = check_count.to_string();
+//    let file_type = ".txt".to_string();
+//    let file_name = format!("{}{}", file_num, file_type);
+//    let file_path = "time_step_files/".to_string() + &file_name;
+//    let output_file_path = Path::new(&file_path);
+//
+//    let t_fill = format!("{} {}", "t:".to_string(), &(t.to_string()+&" ".to_string()));
+//
+//    let num_fill = format!("{} {}", "cell_num:".to_string(), &(CELL_NUM.to_string()+&" ".to_string()));
+//
+//    let mut p_string = "p: ".to_string();
+//    let mut rho_string = "rho: ".to_string();
+//    let mut v_string = "v: ".to_string();
+//    for i in prims {
+//        let p_fill = i.0.to_string() + &" ".to_string();
+//        p_string.push_str(&p_fill);
+//
+//        let rho_fill = i.1.to_string() + &" ".to_string();
+//        rho_string.push_str(&rho_fill);
+//
+//        let v_fill = i.2.to_string() + &" ".to_string();
+//        v_string.push_str(&v_fill);
+//    }
+// 
+//    let file = fs::OpenOptions::new()
+//        .append(true)
+//        .create(true)
+//        .open(output_file_path)?;
+//
+//    let mut writer = BufWriter::new(file);
+//
+//    writeln!(writer, "{}", num_fill)?;
+//    writeln!(writer, "{}", t_fill)?;
+//    writeln!(writer, "{}", p_string)?;
+//    writeln!(writer, "{}", rho_string)?;
+//    writeln!(writer, "{}", v_string)?;
+//    writer.flush()?;
+//
+//    Ok(())
+//}
 
 ///////////////
 // Simulation
 ///////////////
 fn main() {
-    read_config();
 //    let mut t: f64 = 0.0;
 //    let mut t_checkpoint = CHECK_INTERVAL;
 //    let mut check_count: i8 = 0;
 //
-//    let initial_primitives = init_prim();
+    let initial_primitives = init_prim();
+    println!("{:?}", initial_primitives);
 //    let mut conserved_vec = cons_vec_from_prim(initial_primitives.clone(), ADIABATIC);
 //
 //    while t < T_FINAL {

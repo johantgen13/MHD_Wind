@@ -1,7 +1,15 @@
  ## May 15 2026
  - Paused implementation of the higher order solution.
  - Began implementation of MHD. The following functions were written or modified:
-   - initial params
+   - initial params (location: main.rs)
+   - lorentz factor (location: math_functions.rs)
+ - Documentation has been written for the following functions:
+   - initial params (location: main.rs)
+   - lorentz factor (location: math_functions.rs)
+ - Seperation of the simulation into multiple files.
+ - Created the math_functions.rs file.
+ - Updated the CHANGELOG file.
+ - Updated the README file.
  
  ## May 7 2026
  - Began implementation of the higher order solution.
