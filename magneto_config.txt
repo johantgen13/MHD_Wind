@@ -1,7 +1,8 @@
-cfl: 0.5
+cfl: 0.2
 tfinal: 0.401
 checkpoint_interval: 0.0125
 num_zones: 10
+discontinuity_num: 1
 discontinuity: 0.5
 a_index: 1.4
 p: 1.0, 0.125

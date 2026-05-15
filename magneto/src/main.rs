@@ -236,6 +236,14 @@ fn prim_vec_from_cons(cons: Vec<(f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64
     prims_vec
 }
 
+fn read_config() {
+    let file_path = "/Users/toogan13/Desktop/MHD_Wind/magneto_config.txt".to_string();
+    let file = fs::read_to_string(&file_path);
+    let file_rows: Vec<&str> = file.split('\n').collect();
+
+    println!("{:?}", file_rows);
+}
+
 fn write_checkpoint(prims: Vec<(f64, f64, f64)>, t: f64, check_count: i8) -> Result<(), Box<dyn std::error::Error>> {
     let file_num = check_count.to_string();
     let file_type = ".txt".to_string();
@@ -282,40 +290,40 @@ fn write_checkpoint(prims: Vec<(f64, f64, f64)>, t: f64, check_count: i8) -> Res
 // Simulation
 ///////////////
 fn main() {
-    let mut t: f64 = 0.0;
-    let mut t_checkpoint = CHECK_INTERVAL;
-    let mut check_count: i8 = 0;
-
-    let initial_primitives = init_prim();
-    let mut conserved_vec = cons_vec_from_prim(initial_primitives.clone(), ADIABATIC);
-
-
-    while t < T_FINAL {
-        let primitives = prim_vec_from_cons(conserved_vec.clone(), ADIABATIC);
-        let conserve = cons_vec_from_prim(primitives.clone(), ADIABATIC);
-
-        let mut dt = 1.0;
-        for i in 0..((CELL_NUM - 1.0) as u8) {
-            let index_1: usize = (i).try_into().unwrap();
-            let index_2: usize = (i+1).try_into().unwrap();
-            let dt_check = compute_time_step(primitives[index_1], primitives[index_2], ADIABATIC);
-            if dt_check < dt {
-                dt = dt_check;
-            }
-        }
-        dt = CFL * dt;
-
-        conserved_vec = l_function(primitives.clone(), conserve, dt);
-
-        println!("First Cell: {:?}", primitives[0]);
-        println!("Middle Cell: {:?}", primitives[5]);
-        println!("Last Cell: {:?}", primitives[9]);
-        if t >= t_checkpoint {
-            write_checkpoint(primitives.clone(), t, check_count);
-            t_checkpoint += CHECK_INTERVAL;
-            check_count += 1;
-        }
-
-        t += dt;
-    }
+    read_config();
+//    let mut t: f64 = 0.0;
+//    let mut t_checkpoint = CHECK_INTERVAL;
+//    let mut check_count: i8 = 0;
+//
+//    let initial_primitives = init_prim();
+//    let mut conserved_vec = cons_vec_from_prim(initial_primitives.clone(), ADIABATIC);
+//
+//    while t < T_FINAL {
+//        let primitives = prim_vec_from_cons(conserved_vec.clone(), ADIABATIC);
+//        let conserve = cons_vec_from_prim(primitives.clone(), ADIABATIC);
+//
+//        let mut dt = 1.0;
+//        for i in 0..((CELL_NUM - 1.0) as u8) {
+//            let index_1: usize = (i).try_into().unwrap();
+//            let index_2: usize = (i+1).try_into().unwrap();
+//            let dt_check = compute_time_step(primitives[index_1], primitives[index_2], ADIABATIC);
+//            if dt_check < dt {
+//                dt = dt_check;
+//            }
+//        }
+//        dt = CFL * dt;
+//
+//        conserved_vec = l_function(primitives.clone(), conserve, dt);
+//
+//        println!("First Cell: {:?}", primitives[0]);
+//        println!("Middle Cell: {:?}", primitives[5]);
+//        println!("Last Cell: {:?}", primitives[9]);
+//        if t >= t_checkpoint {
+//            write_checkpoint(primitives.clone(), t, check_count);
+//            t_checkpoint += CHECK_INTERVAL;
+//            check_count += 1;
+//        }
+//
+//        t += dt;
+//    }
 } 
