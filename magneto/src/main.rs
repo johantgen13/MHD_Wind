@@ -1,7 +1,7 @@
 // This is the rust file containing the 1D relativistic mhd simulation.
 // 
 // Author: Brayden JoHantgen
-// Last Update: 5/15/2026
+// Last Update: 5/18/2026
 
 //#![allow(dead_code)]
 
@@ -97,13 +97,13 @@ const DISCON: f64 = 0.5;
 ///     This function uses the values for the cell numbers and the location
 ///     of the discontinuity to write the primitive variables for the defined
 ///     grid. This function depends on the read_config function.
-fn init_prim() -> Vec<(f64, f64, f64, f64, f64, f64)> {
+fn init_prim() -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
     let mut init_primitive = Vec::new();
     for i in 0..(CELL_NUM as u8) {
         if i < ((CELL_NUM * DISCON) as u8) {
-            init_primitive.push((1.0, 1.0, 0.0, 0.0, 0.5, 1.0));
+            init_primitive.push((1.0, 1.0, 0.0, 0.0, 0.0, 0.5, 1.0, 0.0));
         } else {
-            init_primitive.push((0.125, 0.1, 0.0, 0.0, 0.5, -1.0));
+            init_primitive.push((0.125, 0.1, 0.0, 0.0, 0.0, 0.5, -1.0, 0.0));
         }
     }
     init_primitive
@@ -187,7 +187,7 @@ fn main() {
 //    let mut check_count: i8 = 0;
 //
     let initial_primitives = init_prim();
-    let test_val = math_functions::total_energy_density(initial_primitives[0], 1.4);
+    let test_val = math_functions::prim_to_cons(initial_primitives[0], 1.4);
     println!("{:?}", test_val);
 //    let mut conserved_vec = cons_vec_from_prim(initial_primitives.clone(), ADIABATIC);
 //

@@ -1,3 +1,29 @@
+ ## May 18 2026
+ - Wrote or updated the following functions for MHD:
+   - prim to cons (location: math_functions.rs)
+   - initial params (location: main.rs)
+   - lorentz factor (location: math_functions.rs)
+   - rest mass density (location: math_functions.rs)
+   - b_zero (location: math_functions.rs)
+   - b_x (location: math_functions.rs)
+   - b_y (location: math_functions.rs)
+   - b_z (location: math_functions.rs)
+   - b_square (location: math_functions.rs)
+   - specific_energy_gas (location: math_functions.rs)
+   - sound_speed (location: math_functions.rs)
+   - specific_energy_total (location: math_functions.rs)
+   - total_pressure (location: math_functions.rs)
+   - specific_enthalpy (location: math_functions.rs)
+   - momentum_density_x (location: math_functions.rs)
+   - momentum_density_y (location: math_functions.rs)
+   - momentum_density_z (location: math_functions.rs)
+   - total_energy_density (location: math_functions.rs)
+ - Wrote or updated the documentation for the following functions.
+   - b_x (location: math_functions.rs)
+   - b_y (location: math_functions.rs)
+   - b_z (location: math_functions.rs)
+   - b_square (location: math_functions.rs)
+
  ## May 15 2026
  - Paused implementation of the higher order solution.
  - Began implementation of MHD. The following functions were written or modified:
