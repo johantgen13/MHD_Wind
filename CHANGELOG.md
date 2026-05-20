@@ -1,3 +1,9 @@
+ ## May 19 2026
+ - Wrote or updated the following functions for MHD:
+   - cons to prim (location: math_functions.rs)
+   - two_determinant (location: math_functions.rs)
+   - three_determinant (location: math_functions.rs)
+ 
  ## May 18 2026
  - Wrote or updated the following functions for MHD:
    - prim to cons (location: math_functions.rs)

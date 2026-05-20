@@ -206,3 +206,65 @@ pub fn prim_to_cons(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64
     let cons = (d, s_x, s_y, s_z, tau, prim.5, prim.6, prim.7);
     cons
 }
+
+/// Input:
+/// Output:
+/// Description:
+pub fn two_determinant(a:f64, b: f64, c:f64, d:f64) -> f64 {
+    let det = a * d - b * c;
+    det
+}
+
+/// Input:
+/// Output:
+/// Description:
+pub fn three_determinant(a1:f64, a2: f64, a3:f64, b1:f64, b2:f64, b3:f64, c1:f64, c2:f64, c3:f64) -> f64 {
+    let det1 = two_determinant(b2, b3, c2, c3);
+    let det2 = two_determinant(b1, b3, c1, c3);
+    let det3 = two_determinant(b1, b2, c1, c2);
+    let det = a1 * det1 - a2 * det2 + a3 * det3;
+    det
+}
+
+/// Input:
+/// Output:
+/// Description:
+pub fn adjugate(a1:f64, a2: f64, a3:f64, b1:f64, b2:f64, b3:f64, c1:f64, c2:f64, c3:f64) -> (f64, f64, f64, f64, f64, f64, f64, f64, f64) {
+    let det_j = three_determinant(a1, a2, a3, b1, b2, b3, c1, c2, c2);
+    let j1 = (1.0 / det_j) * (two_determinant(b2, b3, c2, c3));
+    let j2 = (-1.0 / det_j) * (two_determinant(a2, a3, c2, c3));
+    let j3 = (1.0 / det_j) * (two_determinant(a2, a3, b2, b3));
+    let j4 = (-1.0 / det_j) * (two_determinant(b1, b3, c1, c3));
+    let j5 = (1.0 / det_j) * (two_determinant(a1, a3, c1, c3));
+    let j6 = (-1.0 / det_j) * (two_determinant(a1, a3, b1, b3));
+    let j7 = (1.0 / det_j) * (two_determinant(b1, b2, c1, c2));
+    let j8 = (-1.0 / det_j) * (two_determinant(a1, a2, c1, c2));
+    let j9 = (1.0 / det_j) * (two_determinant(a1, a2, b1, b2));
+    let adj_j = (j1, j2, j3, j4, j5, j6, j7, j8, j9);
+    adj_j
+}
+
+/// Input:
+/// Output:
+/// Description:
+pub fn newton_root_finder(init_p: f64, init_rho: f64, init_w: f64, gamma: f64, b_sq:f64, s_sq:f64, f_val:f64, d_val:f64, t_val:f64) -> (f64, f64, f64) {
+    let mut p_val = init_p;
+    let mut rho_val = init_rho;
+    let mut w_val = init_w;
+    
+    let f_eq1 =
+    let f_eq2 = (rho_val + p_val * gamma) * w_val * w_val + b_sq - p_val - (b_sq / (2.0 * w_val * w_val)) - ((f_val * f_val) / (2.0 * (rho_val + p_val * gamma) * w_val * w_val)) - t_val;
+    let f_eq3 = rho_val * w_val + d_val;
+}
+
+/// Input:
+/// Output:
+/// Description: This function attempts to use the multidimensional Newton's method 
+///     to find values for P, rho, and W.
+pub fn cons_to_prim(cons: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> f64 { // (f64, f64, f64, f64, f64, f64, f64, f64) {
+    let f_val = cons.1 * cons.5 + cons.2 * cons.6 + cons.3 * cons.7;
+    let b_sq = cons.5 * cons.5 + cons.6 * cons.6 + cons.7 * cons.7;
+    let s_sq = cons.1 * cons.1 + cons.2 * cons.2 + cons.3 * cons.3;
+    let gamma = a_index / (a_index - 1.0);
+    gamma
+}

@@ -187,7 +187,8 @@ fn main() {
 //    let mut check_count: i8 = 0;
 //
     let initial_primitives = init_prim();
-    let test_val = math_functions::prim_to_cons(initial_primitives[0], 1.4);
+    let cons_test = math_functions::prim_to_cons(initial_primitives[0], 1.4);
+    let test_val = math_functions::cons_to_prim(cons_test, 1.4);
     println!("{:?}", test_val);
 //    let mut conserved_vec = cons_vec_from_prim(initial_primitives.clone(), ADIABATIC);
 //
