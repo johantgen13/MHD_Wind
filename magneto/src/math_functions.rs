@@ -1,7 +1,22 @@
 // This is the rust file containing the math functions for the simulation.
 // 
 // Author: Brayden JoHantgen
-// Last Update: 5/18/2026
+// Last Update: 5/21/2026
+
+/// Input:
+/// Output:
+/// Description:
+pub fn round_float(num: f64) -> f64 {
+    let remain = num % 1.0;
+    let round: f64;
+    
+    if remain < 0.5 {
+        round = num.floor();
+    } else {
+        round = num.ceil();
+    }
+    round
+}
 
 /// Input:
 ///     vx: The x-component of the fluid velocity.
@@ -251,20 +266,78 @@ pub fn newton_root_finder(init_p: f64, init_rho: f64, init_w: f64, gamma: f64, b
     let mut p_val = init_p;
     let mut rho_val = init_rho;
     let mut w_val = init_w;
+
+    let mut w_change: f64 = 1.0;
+    let mut count: f64 = 0.0;
     
-    let f_eq1 =
-    let f_eq2 = (rho_val + p_val * gamma) * w_val * w_val + b_sq - p_val - (b_sq / (2.0 * w_val * w_val)) - ((f_val * f_val) / (2.0 * (rho_val + p_val * gamma) * w_val * w_val)) - t_val;
-    let f_eq3 = rho_val * w_val + d_val;
+    while w_change.abs() > 0.0001 {
+        let q = (rho_val + p_val * gamma) * w_val * w_val;
+
+        let f_eq1 = (q + b_sq) * (q + b_sq) * ((w_val * w_val - 1.0) / (w_val * w_val)) - (2.0 * q + b_sq) * f_val / (q * q) - s_sq;
+        let f_eq2 = q + b_sq - p_val - (b_sq / (2.0 * w_val * w_val)) - (f_val * f_val / (2.0 * q * q)) - rho_val * w_val - t_val;
+        let f_eq3 = rho_val * w_val - d_val;
+
+        let j_p_1 = 2.0 * gamma * (w_val * w_val - 1.0) * (q + b_sq) - 2.0 * gamma * w_val * w_val * f_val * f_val / (q * q) + 2.0 * (2.0 * q + b_sq) * f_val * f_val * gamma * w_val * w_val / (q * q * q);
+        let j_rho_1 = 2.0 * (q + b_sq) * (w_val * w_val - 1.0) - 2.0 * w_val * w_val * f_val * f_val / (q * q) + 2.0 * (2.0 * q + b_sq) * f_val * f_val * w_val * w_val / (q * q * q);
+        let j_w_1 = 2.0 * (q + b_sq) * ((w_val * w_val - 1.0)/(w_val * w_val)) * (2.0 * q / w_val) + (q + b_sq) * (q + b_sq) * (2.0 / w_val) - 2.0 * (q + b_sq) * (q + b_sq) * ((w_val * w_val - 1.0)/(w_val * w_val * w_val)) - 4.0 * f_val * f_val / (w_val * q) - (2.0 * q + b_sq) * 4.0 * f_val * f_val / (w_val * q * q);
+
+        let j_p_2 = gamma * w_val * w_val - 1.0 + f_val * f_val * gamma * w_val * w_val / (q * q * q); 
+        let j_rho_2 = w_val * w_val + f_val * f_val * w_val * w_val / (q * q * q) - w_val;
+        let j_w_2 = 2.0 * q / w_val - b_sq / (w_val * w_val * w_val) + 2.0 * f_val * f_val / (q * q * w_val) - rho_val;
+
+        let j_p_3 = 0.0;
+        let j_rho_3 = w_val;
+        let j_w_3 = rho_val;
+
+        let adj_j = adjugate(j_p_1, j_rho_1, j_w_1, j_p_2, j_rho_2, j_w_2, j_p_3, j_rho_3, j_w_3);
+
+        let delta_p = -1.0 * (adj_j.0 * f_eq1 + adj_j.1 * f_eq2 + adj_j.2 * f_eq3);
+        let delta_rho = -1.0 * (adj_j.3 * f_eq1 + adj_j.4 * f_eq2 + adj_j.5 * f_eq3);
+        let delta_w = -1.0 * (adj_j.6 * f_eq1 + adj_j.7 * f_eq2 + adj_j.8 * f_eq3);
+
+        let new_p = delta_p + init_p;
+        let new_rho = delta_rho + init_rho;
+        let new_w = delta_w + init_w;
+
+        w_change = new_w - w_val;
+        count += 1.0;
+
+        p_val = new_p;
+        rho_val = new_rho;
+        w_val = new_w;
+
+        println!("{:?}", (p_val, rho_val, w_val));
+
+        if count == 100.0 {
+            break;
+        }
+    }
+    println!("{:?}", count);
+    let root = (p_val, rho_val, w_val);
+    root
 }
 
 /// Input:
 /// Output:
 /// Description: This function attempts to use the multidimensional Newton's method 
 ///     to find values for P, rho, and W.
-pub fn cons_to_prim(cons: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> f64 { // (f64, f64, f64, f64, f64, f64, f64, f64) {
+pub fn cons_to_prim(cons: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64, p_guess: f64, rho_guess: f64, w_guess: f64) ->  (f64, f64, f64, f64, f64, f64, f64, f64) {
     let f_val = cons.1 * cons.5 + cons.2 * cons.6 + cons.3 * cons.7;
     let b_sq = cons.5 * cons.5 + cons.6 * cons.6 + cons.7 * cons.7;
     let s_sq = cons.1 * cons.1 + cons.2 * cons.2 + cons.3 * cons.3;
     let gamma = a_index / (a_index - 1.0);
-    gamma
+
+    let root_tup = newton_root_finder(p_guess, rho_guess, w_guess, gamma, b_sq, s_sq, f_val, cons.0, cons.4);
+    let p = root_tup.0;
+    let rho = root_tup.1;
+    let w = root_tup.2;
+
+    let h = 1.0 + (p * a_index) / (rho * (a_index - 1.0));
+
+    let vx = (cons.1 + (f_val / (rho * h * w * w)) * cons.5) / (rho * h * w * w + b_sq);
+    let vy = (cons.2 + (f_val / (rho * h * w * w)) * cons.6) / (rho * h * w * w + b_sq);
+    let vz = (cons.3 + (f_val / (rho * h * w * w)) * cons.7) / (rho * h * w * w + b_sq);
+
+    let new_prim = (p, rho, vx, vy, vz, cons.5, cons.6, cons.7);
+    new_prim
 }
