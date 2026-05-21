@@ -267,10 +267,10 @@ pub fn newton_root_finder(init_p: f64, init_rho: f64, init_w: f64, gamma: f64, b
     let mut rho_val = init_rho;
     let mut w_val = init_w;
 
-    let mut w_change: f64 = 1.0;
+    let mut w_change: f64;
     let mut count: f64 = 0.0;
     
-    while w_change.abs() > 0.0001 {
+    while count < 100.0 {
         let q = (rho_val + p_val * gamma) * w_val * w_val;
 
         let f_eq1 = (q + b_sq) * (q + b_sq) * ((w_val * w_val - 1.0) / (w_val * w_val)) - (2.0 * q + b_sq) * f_val / (q * q) - s_sq;
@@ -308,7 +308,15 @@ pub fn newton_root_finder(init_p: f64, init_rho: f64, init_w: f64, gamma: f64, b
 
         println!("{:?}", (p_val, rho_val, w_val));
 
-        if count == 100.0 {
+        // improve performance
+        if w_change.abs() < 0.0001 {
+            if count >= 10.0 {
+                break;
+            }
+        }
+
+        // stop divergence
+        if w_change.abs() > 0.1 {
             break;
         }
     }

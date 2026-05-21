@@ -101,7 +101,7 @@ fn init_prim() -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
     let mut init_primitive = Vec::new();
     for i in 0..(CELL_NUM as u8) {
         if i < ((CELL_NUM * DISCON) as u8) {
-            init_primitive.push((1.0, 1.0, 0.4, 0.0, 0.0, 0.5, 1.0, 0.0));
+            init_primitive.push((1.0, 1.0, 0.01, 0.0, 0.0, 0.5, 1.0, 0.0));
         } else {
             init_primitive.push((0.125, 0.1, 0.0, 0.0, 0.0, 0.5, -1.0, 0.0));
         }
@@ -189,7 +189,7 @@ fn main() {
     let initial_primitives = init_prim();
     let cons_test = math_functions::prim_to_cons(initial_primitives[0], 1.4);
     let lorentz_val = math_functions::lorentz_factor(initial_primitives[0].2, initial_primitives[0].3, initial_primitives[0].4);
-    let test_val = math_functions::cons_to_prim(cons_test, 1.4, 1.0, 1.0, lorentz_val);
+    let test_val = math_functions::cons_to_prim(cons_test, 1.4, initial_primitives[0].0, initial_primitives[0].1, lorentz_val);
     println!("{:?}", test_val);
 //    let mut conserved_vec = cons_vec_from_prim(initial_primitives.clone(), ADIABATIC);
 //
