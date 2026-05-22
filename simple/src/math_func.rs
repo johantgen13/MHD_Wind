@@ -144,10 +144,10 @@ pub fn prim_to_cons(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64
 /// Output:
 /// Description:
 pub fn cubic_solver(a: f64, b: f64, c:f64, d:f64) -> f64 {
-    let delta_0 = b * b - 3.0 * a * c;
-    let delta_1 = 2.0 * b * b * b - 9.0 * a * b * c + 27.0 * a * a * d;
-    let delta_2 = (0.5 * (delta_1 - (delta_1 * delta_1 - 4.0 * delta_0 * delta_0 * delta_0).sqrt())).cbrt();
-    let x = - 0.3333 * (b + delta_2 + delta_0 / delta_2) / a;
+    let p = - b / (3.0 * a);
+    let q = p * p * p + (b * c - 3.0 * a * d) / (6.0 * a * a);
+    let r = c / (3.0 * a);
+    let x = (q + (q * q + (r - p * p) * (r - p * p) * (r - p * p)).sqrt()).cbrt() + (q - (q * q + (r - p * p) * (r - p * p) * (r - p * p)).sqrt()).cbrt() + p;
     x
 }
 
