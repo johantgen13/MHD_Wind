@@ -1,3 +1,10 @@
+ ## May 21 2026
+ - Wrote or updated the following functions for MHD:
+   - round float (location: math_functions.rs)
+   - adjugate (location: math_functions.rs)
+   - Newton root finder (location: math_functions.rs)
+   - cons to prim (location: math_functions.rs)
+ 
  ## May 19 2026
  - Wrote or updated the following functions for MHD:
    - cons to prim (location: math_functions.rs)
