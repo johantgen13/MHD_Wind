@@ -1,63 +1,74 @@
+ ## May 22 2026
+ - Began writing a simple nonrelativistic mhd code for example purposes.
+ - Two files were written for this code: main.rs and math_func.rs
+ - The following functions were written for this code:
+   - total pressure
+   - total energy
+   - prim to cons
+   - cons to prim
+   - flux
+ - Updated the CHANGELOG file.
+ 
  ## May 21 2026
  - Wrote or updated the following functions for MHD:
-   - round float (location: math_functions.rs)
-   - adjugate (location: math_functions.rs)
-   - Newton root finder (location: math_functions.rs)
-   - cons to prim (location: math_functions.rs)
+   - round float (location: magneto/math_functions.rs)
+   - adjugate (location: magneto/math_functions.rs)
+   - Newton root finder (location: magneto/math_functions.rs)
+   - cons to prim (location: magneto/math_functions.rs)
  
  ## May 19 2026
  - Wrote or updated the following functions for MHD:
-   - cons to prim (location: math_functions.rs)
-   - two_determinant (location: math_functions.rs)
-   - three_determinant (location: math_functions.rs)
+   - cons to prim (location: magneto/math_functions.rs)
+   - two_determinant (location: magneto/math_functions.rs)
+   - three_determinant (location: magneto/math_functions.rs)
  
  ## May 18 2026
  - Wrote or updated the following functions for MHD:
-   - prim to cons (location: math_functions.rs)
-   - initial params (location: main.rs)
-   - lorentz factor (location: math_functions.rs)
-   - rest mass density (location: math_functions.rs)
-   - b_zero (location: math_functions.rs)
-   - b_x (location: math_functions.rs)
-   - b_y (location: math_functions.rs)
-   - b_z (location: math_functions.rs)
-   - b_square (location: math_functions.rs)
-   - specific_energy_gas (location: math_functions.rs)
-   - sound_speed (location: math_functions.rs)
-   - specific_energy_total (location: math_functions.rs)
-   - total_pressure (location: math_functions.rs)
-   - specific_enthalpy (location: math_functions.rs)
-   - momentum_density_x (location: math_functions.rs)
-   - momentum_density_y (location: math_functions.rs)
-   - momentum_density_z (location: math_functions.rs)
-   - total_energy_density (location: math_functions.rs)
+   - prim to cons (location: magneto/math_functions.rs)
+   - initial params (location: magneto/main.rs)
+   - lorentz factor (location: magneto/math_functions.rs)
+   - rest mass density (location: magneto/math_functions.rs)
+   - b_zero (location: magneto/math_functions.rs)
+   - b_x (location: magneto/math_functions.rs)
+   - b_y (location: magneto/math_functions.rs)
+   - b_z (location: magneto/math_functions.rs)
+   - b_square (location: magneto/math_functions.rs)
+   - specific_energy_gas (location: magneto/math_functions.rs)
+   - sound_speed (location: magneto/math_functions.rs)
+   - specific_energy_total (location: magneto/math_functions.rs)
+   - total_pressure (location: magneto/math_functions.rs)
+   - specific_enthalpy (location: magneto/math_functions.rs)
+   - momentum_density_x (location: magneto/math_functions.rs)
+   - momentum_density_y (location: magneto/math_functions.rs)
+   - momentum_density_z (location: magneto/math_functions.rs)
+   - total_energy_density (location: magneto/math_functions.rs)
  - Wrote or updated the documentation for the following functions.
-   - b_x (location: math_functions.rs)
-   - b_y (location: math_functions.rs)
-   - b_z (location: math_functions.rs)
-   - b_square (location: math_functions.rs)
+   - b_x (location: magneto/math_functions.rs)
+   - b_y (location: magneto/math_functions.rs)
+   - b_z (location: magneto/math_functions.rs)
+   - b_square (location: magneto/math_functions.rs)
 
  ## May 15 2026
  - Paused implementation of the higher order solution.
  - Began implementation of MHD. The following functions were written or modified:
-   - initial params (location: main.rs)
-   - lorentz factor (location: math_functions.rs)
-   - b_zero (location: math_functions.rs)
-   - b_x (location: math_functions.rs)
-   - b_y (location: math_functions.rs)
-   - b_square (location: math_functions.rs)
-   - specific_energy_gas (location: math_functions.rs)
-   - sound_speed (location: math_functions.rs)
-   - specific_energy_total (location: math_functions.rs)
-   - total_pressure (location: math_functions.rs)
-   - specific_enthalpy (location: math_functions.rs)
-   - momentum_density_x (location: math_functions.rs)
-   - momentum_density_y (location: math_functions.rs)
-   - total_energy_density (location: math_functions.rs)
+   - initial params (location: magneto/main.rs)
+   - lorentz factor (location: magneto/math_functions.rs)
+   - b_zero (location: magneto/math_functions.rs)
+   - b_x (location: magneto/math_functions.rs)
+   - b_y (location: magneto/math_functions.rs)
+   - b_square (location: magneto/math_functions.rs)
+   - specific_energy_gas (location: magneto/math_functions.rs)
+   - sound_speed (location: magneto/math_functions.rs)
+   - specific_energy_total (location: magneto/math_functions.rs)
+   - total_pressure (location: magneto/math_functions.rs)
+   - specific_enthalpy (location: magneto/math_functions.rs)
+   - momentum_density_x (location: magneto/math_functions.rs)
+   - momentum_density_y (location: magneto/math_functions.rs)
+   - total_energy_density (location: magneto/math_functions.rs)
  - Documentation has been written for the following functions:
-   - initial params (location: main.rs)
-   - lorentz factor (location: math_functions.rs)
-   - b_zero (location: math_functions.rs)
+   - initial params (location: magneto/main.rs)
+   - lorentz factor (location: magneto/math_functions.rs)
+   - b_zero (location: magneto/math_functions.rs)
  - Seperation of the simulation into multiple files.
  - Created the math_functions.rs file.
  - Updated the CHANGELOG file.

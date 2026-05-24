@@ -33,6 +33,6 @@ fn init_prim() -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
 fn main() {
     let init_prims = init_prim();
     let con_0 = math_func::prim_to_cons(init_prims[0], ADIABATIC);
-    let test_val = math_func::cons_to_prim(con_0, ADIABATIC);
+    let test_val = math_func::flux(init_prims[0], ADIABATIC);
     println!("{:?}", test_val);
 }
