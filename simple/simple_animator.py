@@ -76,28 +76,65 @@ def animation_func(i, directory = "time_step_files"):
     '''
     frame_df = read_txt_files(i, directory = directory)
 
-    plt.title('t='+str(round(frame_df["Values"][1][0], 3)), fontsize=20)
+    #plt.title('t='+str(round(frame_df["Values"][1][0], 3)), fontsize=20)
 
     cells = frame_df["Values"][0][0]
     rnames = np.linspace(0.0, 1.0, (int(cells+1)))
     r = 0.5 * (rnames[:-1] + rnames[1:])
 
-    animated_plot.set_data(r, frame_df["Values"][3])
-
+    animated_plot_1.set_data(r, frame_df["Values"][3])
+    animated_plot_2.set_data(r, frame_df["Values"][4])
+    animated_plot_3.set_data(r, frame_df["Values"][5])
+    animated_plot_4.set_data(r, frame_df["Values"][8])
+    animated_plot_5.set_data(r, frame_df["Values"][2])
 
 # Reading the Files
 directory = "time_step_files"
 lst = os.listdir(directory)
 file_num = len(lst) - 1
 
-fig, ax = plt.subplots(1,1)
-ax = plotparams(ax)
+print(read_txt_files(0))
 
-animated_plot, = ax.plot([], [])
-ax.set_xlim(-0.05,1.05)
-ax.set_ylim(-0.05,1.05)
-ax.set_xlabel('x', fontsize=15)
-ax.set_ylabel(r'$\rho$', fontsize=15)
+fig = plt.figure(figsize=(7,7))
+gs = fig.add_gridspec(3, 2, wspace=0.3)
+ax = gs.subplots(sharex=False, sharey=False)
+
+ax[0,0] = plotparams(ax[0,0])
+ax[0,1].set_visible(False)
+ax[1,0] = plotparams(ax[1,0])
+ax[1,1] = plotparams(ax[1,1])
+ax[2,0] = plotparams(ax[2,0])
+ax[2,1] = plotparams(ax[2,1])
+
+animated_plot_1, = ax[0,0].plot([], [])
+animated_plot_2, = ax[1,0].plot([], [])
+animated_plot_3, = ax[1,1].plot([], [])
+animated_plot_4, = ax[2,0].plot([], [])
+animated_plot_5, = ax[2,1].plot([], [])
+
+ax[0,0].set_xlim(-0.1,1.1)
+ax[0,0].set_ylim(-0.1,1.1)
+
+ax[1,0].set_xlim(-0.1,1.1)
+ax[1,0].set_ylim(-0.1,1.1)
+
+ax[1,1].set_xlim(-0.1,1.1)
+ax[1,1].set_ylim(-1.8,0.1)
+
+ax[2,0].set_xlim(-0.1,1.1)
+ax[2,0].set_ylim(-1.1,1.1)
+
+ax[2,1].set_xlim(-0.1,1.1)
+ax[2,1].set_ylim(-0.1,1.1)
+
+ax[2,0].set_xlabel(r'$x$', fontsize=15)
+ax[2,1].set_xlabel(r'$x$', fontsize=15)
+
+ax[0,0].set_ylabel(r'$\rho$', fontsize=15)
+ax[1,0].set_ylabel(r'$v_x$', fontsize=15)
+ax[1,1].set_ylabel(r'$v_y$', fontsize=15)
+ax[2,0].set_ylabel(r'$B_y$', fontsize=15)
+ax[2,1].set_ylabel(r'$P$', fontsize=15)
 
 animation = FuncAnimation(fig=fig, 
                     func=animation_func, 
