@@ -113,19 +113,19 @@ animated_plot_4, = ax[2,0].plot([], [])
 animated_plot_5, = ax[2,1].plot([], [])
 
 ax[0,0].set_xlim(-0.1,1.1)
-ax[0,0].set_ylim(-0.1,1.1)
+ax[0,0].set_ylim(0.0,1.1)
 
 ax[1,0].set_xlim(-0.1,1.1)
-ax[1,0].set_ylim(-0.1,1.1)
+ax[1,0].set_ylim(-0.4,0.8)
 
 ax[1,1].set_xlim(-0.1,1.1)
-ax[1,1].set_ylim(-1.8,0.1)
+ax[1,1].set_ylim(-1.8,0.2)
 
 ax[2,0].set_xlim(-0.1,1.1)
-ax[2,0].set_ylim(-1.1,1.1)
+ax[2,0].set_ylim(-1.25,1.25)
 
 ax[2,1].set_xlim(-0.1,1.1)
-ax[2,1].set_ylim(-0.1,1.1)
+ax[2,1].set_ylim(-0.05,1.15)
 
 ax[2,0].set_xlabel(r'$x$', fontsize=15)
 ax[2,1].set_xlabel(r'$x$', fontsize=15)
