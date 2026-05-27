@@ -1,7 +1,7 @@
 // This is a simple non-relativisetic 1D MHD code.
 //
 // Author: Brayden JoHantgen
-// Last Update: 5/26/2026
+// Last Update: 5/27/2026
 
 use std::fs;
 use std::io::{BufWriter, Write};
@@ -15,7 +15,7 @@ pub mod math_func;
 const CELL_NUM: f64 = 800.0;
 const DISCON: f64 = 0.5;
 const ADIABATIC: f64 = 2.0;
-const DR: f64 = 1.0 / CELL_NUM;
+const DR: f64 = 1.0;// / CELL_NUM;
 const T_FINAL: f64 = 0.401;
 const CHECK_INTERVAL: f64 = 0.025;
 const CFL: f64 = 0.8;
@@ -229,7 +229,7 @@ fn main() {
             }
         dt = CFL * dt;
         
-        conserved_vec = l_function(primitives.clone(), conserve, dt);
+         conserved_vec = l_function(primitives.clone(), conserve, dt);
 
         if t >= t_checkpoint {
             let _ = write_checkpoint(primitives.clone(), t, check_count);

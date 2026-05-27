@@ -79,8 +79,9 @@ def animation_func(i, directory = "time_step_files"):
     plt.title('t='+str(round(frame_df["Values"][1][0], 3)), fontsize=20)
 
     cells = frame_df["Values"][0][0]
-    rnames = np.linspace(0.0, 1.0, (int(cells+1)))
-    r = 0.5 * (rnames[:-1] + rnames[1:])
+    r = np.linspace(0.0, cells)
+    #rnames = np.linspace(0.0, 1.0, (int(cells+1)))
+    #r = 0.5 * (rnames[:-1] + rnames[1:])
 
     animated_plot.set_data(r, frame_df["Values"][3])
 
@@ -94,7 +95,7 @@ fig, ax = plt.subplots(1,1)
 ax = plotparams(ax)
 
 animated_plot, = ax.plot([], [])
-ax.set_xlim(-0.05,1.05)
+#ax.set_xlim(-0.05,1.05)
 ax.set_ylim(-0.05,1.05)
 ax.set_xlabel('x', fontsize=15)
 ax.set_ylabel(r'$\rho$', fontsize=15)
