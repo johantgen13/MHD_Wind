@@ -16,8 +16,8 @@ const CELL_NUM: f64 = 800.0;
 const DISCON: f64 = 0.5;
 const ADIABATIC: f64 = 2.0;
 const DR: f64 = 1.0;// / CELL_NUM;
-const T_FINAL: f64 = 0.401;
-const CHECK_INTERVAL: f64 = 0.025;
+const T_FINAL: f64 = 4.01;
+const CHECK_INTERVAL: f64 = 0.25;
 const CFL: f64 = 0.8;
 const BX: f64 = 0.75;
 
@@ -232,7 +232,7 @@ fn main() {
          conserved_vec = l_function(primitives.clone(), conserve, dt);
 
         if t >= t_checkpoint {
-            let _ = write_checkpoint(primitives.clone(), t, check_count);
+            write_checkpoint(primitives.clone(), t, check_count);
             t_checkpoint += CHECK_INTERVAL;
             check_count += 1;
             }
