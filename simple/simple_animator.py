@@ -4,7 +4,7 @@
 # the 1D nonrelativistic RUST simulation.
 #
 # Author: Brayden JoHantgen
-# Last Update: 5/26/2026
+# Last Update: 5/27/2026
 
 # Importing
 import matplotlib.pyplot as plt
@@ -91,20 +91,22 @@ directory = "time_step_files"
 lst = os.listdir(directory)
 file_num = len(lst) - 1
 
-fig, ax = plt.subplots(1,1)
-ax = plotparams(ax)
+print(read_txt_files(0))
 
-animated_plot, = ax.plot([], [])
+#fig, ax = plt.subplots(1,1)
+#ax = plotparams(ax)
+
+#animated_plot, = ax.plot([], [])
 #ax.set_xlim(-0.05,1.05)
-ax.set_ylim(-0.05,1.05)
-ax.set_xlabel('x', fontsize=15)
-ax.set_ylabel(r'$\rho$', fontsize=15)
+#ax.set_ylim(-0.05,1.05)
+#ax.set_xlabel('x', fontsize=15)
+#ax.set_ylabel(r'$\rho$', fontsize=15)
 
-animation = FuncAnimation(fig=fig, 
-                    func=animation_func, 
-                    frames=file_num,
-                    interval=50,
-                    repeat=False
-                    )
+#animation = FuncAnimation(fig=fig, 
+#                    func=animation_func, 
+#                    frames=file_num,
+#                    interval=50,
+#                    repeat=False
+#                    )
 
-plt.show()
+#plt.show()
