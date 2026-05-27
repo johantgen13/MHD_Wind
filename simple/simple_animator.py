@@ -93,8 +93,6 @@ directory = "time_step_files"
 lst = os.listdir(directory)
 file_num = len(lst) - 1
 
-print(read_txt_files(0))
-
 fig = plt.figure(figsize=(7,7))
 gs = fig.add_gridspec(3, 2, wspace=0.3)
 ax = gs.subplots(sharex=False, sharey=False)
