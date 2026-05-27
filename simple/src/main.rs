@@ -12,14 +12,14 @@ pub mod math_func;
 /////////////////////
 // Useful Variables
 /////////////////////
-const CELL_NUM: f64 = 10.0;
+const CELL_NUM: f64 = 800.0;
 const DISCON: f64 = 0.5;
 const ADIABATIC: f64 = 2.0;
 const DR: f64 = 1.0 / CELL_NUM;
 const T_FINAL: f64 = 0.401;
 const CHECK_INTERVAL: f64 = 0.025;
-const CFL: f64 = 0.5;
-const BX: f64 = 0.5;
+const CFL: f64 = 0.8;
+const BX: f64 = 0.75;
 
 ////////////////////
 // Usage Functions
@@ -30,11 +30,11 @@ const BX: f64 = 0.5;
 /// Description:
 fn init_prim() -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
     let mut init_primitive = Vec::new();
-    for i in 0..(CELL_NUM as u8) {
-        if i < ((CELL_NUM * DISCON) as u8) {
-            init_primitive.push((1.0, 1.0, 0.0, 0.0, 0.0, 0.5, 1.0, 0.0));
+    for i in 0..(CELL_NUM as u32) {
+        if i < ((CELL_NUM * DISCON) as u32) {
+            init_primitive.push((1.0, 1.0, 0.0, 0.0, 0.0, BX, 1.0, 0.0));
         } else {
-            init_primitive.push((0.125, 0.1, 0.0, 0.0, 0.0, 0.5, -1.0, 0.0));
+            init_primitive.push((0.1, 0.125, 0.0, 0.0, 0.0, BX, -1.0, 0.0));
         }
     }
     init_primitive
@@ -45,7 +45,7 @@ fn init_prim() -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
 /// Description:
 fn cons_vec_from_prim(prims: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
     let mut cons_vec = Vec::new();
-    for i in 0..(CELL_NUM as u8) {
+    for i in 0..(CELL_NUM as u32) {
         let index: usize = (i).try_into().unwrap();
         cons_vec.push(math_func::prim_to_cons(prims[index], a_index));
     }
@@ -57,7 +57,7 @@ fn cons_vec_from_prim(prims: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_in
 /// Description:
 fn prim_vec_from_cons(cons: Vec<(f64, f64, f64, f64, f64, f64, f64)>, a_index: f64, bx: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
     let mut prims_vec = Vec::new();
-    for i in 0..(CELL_NUM as u8) {
+    for i in 0..(CELL_NUM as u32) {
         let index: usize = (i).try_into().unwrap();
         prims_vec.push(math_func::cons_to_prim(cons[index], a_index, bx));
     }
@@ -116,7 +116,7 @@ fn godonov(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f6
 fn l_function(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: Vec<(f64, f64, f64, f64, f64, f64, f64)>, dt: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
     let go_vec = godonov(prims_vec, ADIABATIC);
     let mut new_cons_vec = Vec::new();
-    for i in 0..(CELL_NUM as u8) {
+    for i in 0..(CELL_NUM as u32) {
         let index_1: usize = (i).try_into().unwrap();
         let index_2: usize = (i+1).try_into().unwrap();
         let new_0 = cons_vec[index_1].0 - (go_vec[index_2].0 - go_vec[index_1].0) * dt / DR;
