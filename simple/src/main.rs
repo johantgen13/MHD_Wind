@@ -209,6 +209,7 @@ fn write_checkpoint(prims: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, t: f64
 fn main() {
     let mut t: f64 = 0.0;
     let mut t_checkpoint = CHECK_INTERVAL;
+    let mut time_step_count: f64 = 0.0;
     let mut check_count: i8 = 0;
 
     let initial_primitives = init_prim();
@@ -237,5 +238,7 @@ fn main() {
             check_count += 1;
             }
         t += dt;
+        time_step_count += 1.0;
     }
+    println!("The number of timesteps: {:?}", time_step_count);
 }
