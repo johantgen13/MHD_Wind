@@ -6,6 +6,7 @@
 use std::fs;
 use std::io::{BufWriter, Write};
 use std::path::Path;
+use std::time::Instant;
 
 pub mod math_func;
 
@@ -207,6 +208,7 @@ fn write_checkpoint(prims: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, t: f64
 // Simulation
 ///////////////
 fn main() {
+    let before = Instant::now();
     let mut t: f64 = 0.0;
     let mut t_checkpoint = CHECK_INTERVAL;
     let mut time_step_count: f64 = 0.0;
@@ -240,5 +242,9 @@ fn main() {
         t += dt;
         time_step_count += 1.0;
     }
+    let runtime = (before.elapsed().as_millis() as f64) / 1000.0;
+    let performance = (time_step_count * CELL_NUM) / runtime;
     println!("The number of timesteps: {:?}", time_step_count);
+    println!("The runtime in seconds: {:?}", runtime);
+    println!("The performance in zones per second: {:.2?}", performance);
 }
