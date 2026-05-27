@@ -30,8 +30,8 @@ const BX: f64 = 0.75;
 /// Description:
 fn init_prim() -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
     let mut init_primitive = Vec::new();
-    for i in 0..(CELL_NUM as u32) {
-        if i < ((CELL_NUM * DISCON) as u32) {
+    for i in 0..(CELL_NUM as u64) {
+        if i < ((CELL_NUM * DISCON) as u64) {
             init_primitive.push((1.0, 1.0, 0.0, 0.0, 0.0, BX, 1.0, 0.0));
         } else {
             init_primitive.push((0.1, 0.125, 0.0, 0.0, 0.0, BX, -1.0, 0.0));
@@ -45,7 +45,7 @@ fn init_prim() -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
 /// Description:
 fn cons_vec_from_prim(prims: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
     let mut cons_vec = Vec::new();
-    for i in 0..(CELL_NUM as u32) {
+    for i in 0..(CELL_NUM as u64) {
         let index: usize = (i).try_into().unwrap();
         cons_vec.push(math_func::prim_to_cons(prims[index], a_index));
     }
@@ -57,7 +57,7 @@ fn cons_vec_from_prim(prims: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_in
 /// Description:
 fn prim_vec_from_cons(cons: Vec<(f64, f64, f64, f64, f64, f64, f64)>, a_index: f64, bx: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
     let mut prims_vec = Vec::new();
-    for i in 0..(CELL_NUM as u32) {
+    for i in 0..(CELL_NUM as u64) {
         let index: usize = (i).try_into().unwrap();
         prims_vec.push(math_func::cons_to_prim(cons[index], a_index, bx));
     }
@@ -98,14 +98,14 @@ fn hll_flux(prim_l: (f64, f64, f64, f64, f64, f64, f64, f64), prim_r: (f64, f64,
 fn godonov(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
     let mut go_vec = Vec::new();
     go_vec.push(hll_flux(prims_vec[0], prims_vec[1], a_index));
-    for i in 0..((CELL_NUM - 1.0) as u32) {
+    for i in 0..((CELL_NUM - 1.0) as u64) {
         let index_1: usize = (i).try_into().unwrap();
         let index_2: usize = (i+1).try_into().unwrap();
         let go_fill = hll_flux(prims_vec[index_1], prims_vec[index_2], a_index);
         go_vec.push(go_fill);
     }
-    let index_a: usize = ((CELL_NUM - 2.0) as u32).try_into().unwrap();
-    let index_b: usize = ((CELL_NUM - 1.0) as u32).try_into().unwrap();
+    let index_a: usize = ((CELL_NUM - 2.0) as u64).try_into().unwrap();
+    let index_b: usize = ((CELL_NUM - 1.0) as u64).try_into().unwrap();
     go_vec.push(hll_flux(prims_vec[index_a], prims_vec[index_b], a_index));
     go_vec
 }
@@ -116,7 +116,7 @@ fn godonov(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f6
 fn l_function(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: Vec<(f64, f64, f64, f64, f64, f64, f64)>, dt: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
     let go_vec = godonov(prims_vec, ADIABATIC);
     let mut new_cons_vec = Vec::new();
-    for i in 0..(CELL_NUM as u32) {
+    for i in 0..(CELL_NUM as u64) {
         let index_1: usize = (i).try_into().unwrap();
         let index_2: usize = (i+1).try_into().unwrap();
         let new_0 = cons_vec[index_1].0 - (go_vec[index_2].0 - go_vec[index_1].0) * dt / DR;
@@ -219,7 +219,7 @@ fn main() {
         let conserve = cons_vec_from_prim(primitives.clone(), ADIABATIC);
         
         let mut dt = 1.0;
-        for i in 0..((CELL_NUM - 1.0) as u8) {
+        for i in 0..((CELL_NUM - 1.0) as u64) {
             let index_1: usize = (i).try_into().unwrap();
             let index_2: usize = (i+1).try_into().unwrap();
             let dt_check = math_func::compute_time_step(primitives[index_1], primitives[index_2], ADIABATIC, DR);
