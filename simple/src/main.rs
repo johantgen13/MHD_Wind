@@ -1,7 +1,7 @@
-// This is a simple non-relativisetic MHD code.
+// This is a simple non-relativisetic 1D MHD code.
 //
 // Author: Brayden JoHantgen
-// Last Update: 5/25/2026
+// Last Update: 5/26/2026
 
 use std::fs;
 use std::io::{BufWriter, Write};
@@ -12,13 +12,14 @@ pub mod math_func;
 /////////////////////
 // Useful Variables
 /////////////////////
-const CELL_NUM: f64 = 100.0;
+const CELL_NUM: f64 = 10.0;
 const DISCON: f64 = 0.5;
 const ADIABATIC: f64 = 2.0;
 const DR: f64 = 1.0 / CELL_NUM;
 const T_FINAL: f64 = 0.401;
 const CHECK_INTERVAL: f64 = 0.025;
-const CFL: f64 = 0.2;
+const CFL: f64 = 0.5;
+const BX: f64 = 0.5;
 
 ////////////////////
 // Usage Functions
@@ -33,7 +34,7 @@ fn init_prim() -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
         if i < ((CELL_NUM * DISCON) as u8) {
             init_primitive.push((1.0, 1.0, 0.0, 0.0, 0.0, 0.5, 1.0, 0.0));
         } else {
-            init_primitive.push((0.1, 0.125, 0.0, 0.0, 0.0, 0.5, -1.0, 0.0));
+            init_primitive.push((0.125, 0.1, 0.0, 0.0, 0.0, 0.5, -1.0, 0.0));
         }
     }
     init_primitive
@@ -42,7 +43,7 @@ fn init_prim() -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
 /// Input:
 /// Output:
 /// Description:
-fn cons_vec_from_prim(prims: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
+fn cons_vec_from_prim(prims: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
     let mut cons_vec = Vec::new();
     for i in 0..(CELL_NUM as u8) {
         let index: usize = (i).try_into().unwrap();
@@ -54,11 +55,11 @@ fn cons_vec_from_prim(prims: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_in
 /// Input:
 /// Output:
 /// Description:
-fn prim_vec_from_cons(cons: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
+fn prim_vec_from_cons(cons: Vec<(f64, f64, f64, f64, f64, f64, f64)>, a_index: f64, bx: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
     let mut prims_vec = Vec::new();
     for i in 0..(CELL_NUM as u8) {
         let index: usize = (i).try_into().unwrap();
-        prims_vec.push(math_func::cons_to_prim(cons[index], a_index));
+        prims_vec.push(math_func::cons_to_prim(cons[index], a_index, bx));
     }
     prims_vec
 }
@@ -66,7 +67,7 @@ fn prim_vec_from_cons(cons: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_ind
 /// Input:
 /// Output:
 /// Description:
-fn hll_flux(prim_l: (f64, f64, f64, f64, f64, f64, f64, f64), prim_r: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> (f64, f64, f64, f64, f64, f64, f64, f64) {
+fn hll_flux(prim_l: (f64, f64, f64, f64, f64, f64, f64, f64), prim_r: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> (f64, f64, f64, f64, f64, f64, f64) {
     let plus_l = math_func::max_eigen(prim_l.clone(), a_index);
     let minus_l = math_func::min_eigen(prim_l.clone(), a_index);
     let u_l = math_func::prim_to_cons(prim_l.clone(), a_index);
@@ -87,15 +88,14 @@ fn hll_flux(prim_l: (f64, f64, f64, f64, f64, f64, f64, f64), prim_r: (f64, f64,
     let hll_4 = ((a_plus * f_l.4) + (a_minus * f_r.4) - (a_plus * a_minus * (u_r.4 - u_l.4))) / (a_minus + a_plus);
     let hll_5 = ((a_plus * f_l.5) + (a_minus * f_r.5) - (a_plus * a_minus * (u_r.5 - u_l.5))) / (a_minus + a_plus);
     let hll_6 = ((a_plus * f_l.6) + (a_minus * f_r.6) - (a_plus * a_minus * (u_r.6 - u_l.6))) / (a_minus + a_plus);
-    let hll_7 = ((a_plus * f_l.7) + (a_minus * f_r.7) - (a_plus * a_minus * (u_r.7 - u_l.7))) / (a_minus + a_plus);
-    let hll = (hll_0, hll_1, hll_2, hll_3, hll_4, hll_5, hll_6, hll_7);
+    let hll = (hll_0, hll_1, hll_2, hll_3, hll_4, hll_5, hll_6);
     hll
 }
 
 /// Input:
 /// Output:
 /// Description:
-fn godonov(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
+fn godonov(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
     let mut go_vec = Vec::new();
     go_vec.push(hll_flux(prims_vec[0], prims_vec[1], a_index));
     for i in 0..((CELL_NUM - 1.0) as u32) {
@@ -113,7 +113,7 @@ fn godonov(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f6
 /// Input:
 /// Output:
 /// Description:
-fn l_function(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, dt: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
+fn l_function(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: Vec<(f64, f64, f64, f64, f64, f64, f64)>, dt: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
     let go_vec = godonov(prims_vec, ADIABATIC);
     let mut new_cons_vec = Vec::new();
     for i in 0..(CELL_NUM as u8) {
@@ -122,12 +122,11 @@ fn l_function(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec
         let new_0 = cons_vec[index_1].0 - (go_vec[index_2].0 - go_vec[index_1].0) * dt / DR;
         let new_1 = cons_vec[index_1].1 - (go_vec[index_2].1 - go_vec[index_1].1) * dt / DR;
         let new_2 = cons_vec[index_1].2 - (go_vec[index_2].2 - go_vec[index_1].2) * dt / DR;
-        let new_3 = cons_vec[index_1].3 - (go_vec[index_2].3 - go_vec[index_1].2) * dt / DR;
-        let new_4 = cons_vec[index_1].4 - (go_vec[index_2].4 - go_vec[index_1].2) * dt / DR;
-        let new_5 = cons_vec[index_1].5 - (go_vec[index_2].5 - go_vec[index_1].2) * dt / DR;
-        let new_6 = cons_vec[index_1].6 - (go_vec[index_2].6 - go_vec[index_1].2) * dt / DR;
-        let new_7 = cons_vec[index_1].7 - (go_vec[index_2].7 - go_vec[index_1].2) * dt / DR;
-        let new_fill = (new_0, new_1, new_2, new_3, new_4, new_5, new_6, new_7);
+        let new_3 = cons_vec[index_1].3 - (go_vec[index_2].3 - go_vec[index_1].3) * dt / DR;
+        let new_4 = cons_vec[index_1].4 - (go_vec[index_2].4 - go_vec[index_1].4) * dt / DR;
+        let new_5 = cons_vec[index_1].5 - (go_vec[index_2].5 - go_vec[index_1].5) * dt / DR;
+        let new_6 = cons_vec[index_1].6 - (go_vec[index_2].6 - go_vec[index_1].6) * dt / DR;
+        let new_fill = (new_0, new_1, new_2, new_3, new_4, new_5, new_6);
         new_cons_vec.push(new_fill);
     }
     new_cons_vec
@@ -216,7 +215,7 @@ fn main() {
     let mut conserved_vec = cons_vec_from_prim(initial_primitives.clone(), ADIABATIC);
 
     while t < T_FINAL {
-        let primitives = prim_vec_from_cons(conserved_vec.clone(), ADIABATIC);
+        let primitives = prim_vec_from_cons(conserved_vec.clone(), ADIABATIC, BX);
         let conserve = cons_vec_from_prim(primitives.clone(), ADIABATIC);
         
         let mut dt = 1.0;

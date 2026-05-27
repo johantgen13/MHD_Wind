@@ -1,12 +1,35 @@
+ ## May 26 2026
+ 
+ ## May 25 2026
+ - Finished writing the simple mhd code.
+ - The following functions were written or modified for the simple code:
+   - sound speed (location: simple/math_func.rs)
+   - Alfven speed (location: simple/math_func.rs)
+   - fast magneto speed (location: simple/math_func.rs)
+   - slow magneto speed (location: simple/math_func.rs)
+   - max eigen (location: simple/math_func.rs)
+   - min eigen (location: simple/math_func.rs)
+   - tuple max (location: simple/math_func.rs)
+   - compute time step (location: simple/math_func.rs)
+   - cons vec from prim (location: simple/main.rs)
+   - prim vec from cons (location: simple/main.rs)
+   - hll flux (location: simple/main.rs)
+   - godonov (location: simple/main.rs)
+   - write checkpoint (location: simple/main.rs)
+   - l function (location: simple/main.rs)
+ - Documentation was written for these functions:
+   - total pressure (location: simple/math_func.rs)
+ - Updated the CHANGELOG file.
+ 
  ## May 22 2026
  - Began writing a simple nonrelativistic mhd code for example purposes.
  - Two files were written for this code: main.rs and math_func.rs
  - The following functions were written for this code:
-   - total pressure
-   - total energy
-   - prim to cons
-   - cons to prim
-   - flux
+   - total pressure (location: simple/math_func.rs)
+   - total energy (location: simple/math_func.rs)
+   - prim to cons (location: simple/math_func.rs)
+   - cons to prim (location: simple/math_func.rs)
+   - flux (location: simple/math_func.rs)
  - Updated the CHANGELOG file.
  
  ## May 21 2026
