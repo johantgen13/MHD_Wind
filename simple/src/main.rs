@@ -1,9 +1,10 @@
 // This is a simple non-relativisetic 1D MHD code.
 //
 // Author: Brayden JoHantgen
-// Last Update: 5/27/2026
+// Last Update: 5/28/2026
 
 use std::fs;
+use std::str;
 use std::io::{BufWriter, Write};
 use std::path::Path;
 use std::time::Instant;
@@ -13,7 +14,7 @@ pub mod math_func;
 /////////////////////
 // Useful Variables
 /////////////////////
-const CELL_NUM: f64 = 800.0;
+const CELL_NUM: f64 = 10.0;
 const DISCON: f64 = 0.5;
 const ADIABATIC: f64 = 2.0;
 const DR: f64 = 1.0 / CELL_NUM;
@@ -29,10 +30,32 @@ const BX: f64 = 0.75;
 /// Input:
 /// Output:
 /// Description:
+//fn read_config(file_path: String) -> Vec<u8> {
+//    let input_file_path = Path::new(&file_path);
+//    let data_bytes = fs::read(input_file_path);
+//    let byte_vec = data_bytes.expect("Something went wrong!");
+//    let index_vec = math_func::vector_index(byte_vec, 10);
+//    index_vec
+    //for i in byte_vec {
+    //    println!("{:?}", i);
+    //}
+//}
+
+/// Input:
+/// Output:
+/// Description:
+//fn read_config(file_path: String) -> (f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64) {
+//    let input_file_path = Path::new(&file_path);
+//    let contents = fs::read_to_string(input_file_path);
+//}
+
+/// Input:
+/// Output:
+/// Description:
 fn init_prim() -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
     let mut init_primitive = Vec::new();
-    for i in 0..(CELL_NUM as u64) {
-        if i < ((CELL_NUM * DISCON) as u64) {
+    for i in 0..((CELL_NUM + 2.0) as u64) {
+        if i < ((CELL_NUM * DISCON + 1.0) as u64) {
             init_primitive.push((1.0, 1.0, 0.0, 0.0, 0.0, BX, 1.0, 0.0));
         } else {
             init_primitive.push((0.1, 0.125, 0.0, 0.0, 0.0, BX, -1.0, 0.0));
@@ -68,7 +91,28 @@ fn prim_vec_from_cons(cons: Vec<(f64, f64, f64, f64, f64, f64, f64)>, a_index: f
 /// Input:
 /// Output:
 /// Description:
-fn hll_flux(prim_l: (f64, f64, f64, f64, f64, f64, f64, f64), prim_r: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> (f64, f64, f64, f64, f64, f64, f64) {
+fn hll_flux(prim_1: (f64, f64, f64, f64, f64, f64, f64, f64), prim_2: (f64, f64, f64, f64, f64, f64, f64, f64), prim_3: (f64, f64, f64, f64, f64, f64, f64, f64), prim_4: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> (f64, f64, f64, f64, f64, f64, f64) {
+    let p_l = math_func::left_reconstruction(prim_1.0, prim_2.0, prim_3.0);
+    let rho_l = math_func::left_reconstruction(prim_1.1, prim_2.1, prim_3.1);
+    let vx_l = math_func::left_reconstruction(prim_1.2, prim_2.2, prim_3.2);
+    let vy_l = math_func::left_reconstruction(prim_1.3, prim_2.3, prim_3.3);
+    let vz_l = math_func::left_reconstruction(prim_1.4, prim_2.4, prim_3.4);
+    let bx_l = prim_2.5;
+    let by_l = math_func::left_reconstruction(prim_1.6, prim_2.6, prim_3.6);
+    let bz_l = math_func::left_reconstruction(prim_1.7, prim_2.7, prim_3.7);
+
+    let p_r = math_func::right_reconstruction(prim_2.0, prim_3.0, prim_4.0);
+    let rho_r = math_func::right_reconstruction(prim_2.1, prim_3.1, prim_4.1);
+    let vx_r = math_func::right_reconstruction(prim_2.2, prim_3.2, prim_4.2);
+    let vy_r = math_func::right_reconstruction(prim_2.3, prim_3.3, prim_4.3);
+    let vz_r = math_func::right_reconstruction(prim_2.4, prim_3.4, prim_4.4);
+    let bx_r = prim_3.5;
+    let by_r = math_func::right_reconstruction(prim_2.6, prim_3.6, prim_4.6);
+    let bz_r = math_func::right_reconstruction(prim_2.7, prim_3.7, prim_4.7);
+
+    let prim_l = (p_l, rho_l, vx_l, vy_l, vz_l, bx_l, by_l, bz_l);
+    let prim_r = (p_r, rho_r, vx_r, vy_r, vz_r, bx_r, by_r, bz_r);
+
     let plus_l = math_func::max_eigen(prim_l.clone(), a_index);
     let minus_l = math_func::min_eigen(prim_l.clone(), a_index);
     let u_l = math_func::prim_to_cons(prim_l.clone(), a_index);
@@ -98,16 +142,21 @@ fn hll_flux(prim_l: (f64, f64, f64, f64, f64, f64, f64, f64), prim_r: (f64, f64,
 /// Description:
 fn godonov(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
     let mut go_vec = Vec::new();
-    go_vec.push(hll_flux(prims_vec[0], prims_vec[1], a_index));
-    for i in 0..((CELL_NUM - 1.0) as u64) {
-        let index_1: usize = (i).try_into().unwrap();
-        let index_2: usize = (i+1).try_into().unwrap();
-        let go_fill = hll_flux(prims_vec[index_1], prims_vec[index_2], a_index);
+    go_vec.push(hll_flux(prims_vec[0], prims_vec[1], prims_vec[2], prims_vec[3], a_index));
+    for i in 1..((CELL_NUM) as u64) {
+        let index_1: usize = (i-1).try_into().unwrap();
+        let index_2: usize = (i).try_into().unwrap();
+        let index_3: usize = (i+1).try_into().unwrap();
+        let index_4: usize = (i+2).try_into().unwrap();
+        let go_fill = hll_flux(prims_vec[index_1], prims_vec[index_2], prims_vec[index_3], prims_vec[index_4], a_index);
         go_vec.push(go_fill);
     }
     let index_a: usize = ((CELL_NUM - 2.0) as u64).try_into().unwrap();
     let index_b: usize = ((CELL_NUM - 1.0) as u64).try_into().unwrap();
-    go_vec.push(hll_flux(prims_vec[index_a], prims_vec[index_b], a_index));
+    let index_c: usize = ((CELL_NUM) as u64).try_into().unwrap();
+    let index_d: usize = ((CELL_NUM + 1.0) as u64).try_into().unwrap();
+    go_vec.push(hll_flux(prims_vec[index_a], prims_vec[index_b], prims_vec[index_c], prims_vec[index_d], a_index));
+    go_vec.push(hll_flux(prims_vec[index_a], prims_vec[index_b], prims_vec[index_c], prims_vec[index_d], a_index));
     go_vec
 }
 
@@ -117,7 +166,7 @@ fn godonov(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f6
 fn l_function(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: Vec<(f64, f64, f64, f64, f64, f64, f64)>, dt: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
     let go_vec = godonov(prims_vec, ADIABATIC);
     let mut new_cons_vec = Vec::new();
-    for i in 0..(CELL_NUM as u64) {
+    for i in 0..((CELL_NUM + 2.0) as u64) {
         let index_1: usize = (i).try_into().unwrap();
         let index_2: usize = (i+1).try_into().unwrap();
         let new_0 = cons_vec[index_1].0 - (go_vec[index_2].0 - go_vec[index_1].0) * dt / DR;
@@ -132,6 +181,11 @@ fn l_function(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec
     }
     new_cons_vec
 }
+
+// Input:
+// Output:
+// Description:
+//fn rk4_step()
 
 /// Input:
 /// Output:
@@ -209,12 +263,19 @@ fn write_checkpoint(prims: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, t: f64
 ///////////////
 fn main() {
     let before = Instant::now();
+
+    //let path = "/Users/toogan13/Desktop/MHD_Wind/magneto_config.txt";
+    //let bytes = read_config(path.to_string());
+    //println!("{:?}", bytes);
+
     let mut t: f64 = 0.0;
     let mut t_checkpoint = CHECK_INTERVAL;
     let mut time_step_count: f64 = 0.0;
     let mut check_count: i8 = 0;
 
     let initial_primitives = init_prim();
+    //let test_val = godonov(initial_primitives, 2.0);
+    //println!("{:?}", test_val);
     let mut conserved_vec = cons_vec_from_prim(initial_primitives.clone(), ADIABATIC);
 
     while t < T_FINAL {

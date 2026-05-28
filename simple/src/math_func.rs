@@ -1,7 +1,7 @@
 // This file is full of functions to supplement the simple 1D mhd code.
 //
 // Author: Brayden JoHantgen
-// Last Update: 5/26/2026
+// Last Update: 5/28/2026
 
 /// Input:
 ///     prim: the eight component array of the primitive variables
@@ -164,6 +164,20 @@ pub fn tuple_max(tup: (f64, f64, f64)) -> f64 {
 /// Input:
 /// Output:
 /// Description:
+pub fn tuple_min(tup: (f64, f64, f64)) -> f64 {
+    let arr = [tup.0, tup.1, tup.2];
+    let mut min_check = tuple_max(tup);
+    for i in 0..3 {
+        if arr[i] < min_check {
+            min_check = arr[i]
+        }
+    }
+    min_check
+}
+
+/// Input:
+/// Output:
+/// Description:
 pub fn compute_time_step(prim_l: (f64, f64, f64, f64, f64, f64, f64, f64), prim_r: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64, dx: f64) -> f64 {
         let plus_l = max_eigen(prim_l.clone(), a_index);
         let minus_l = min_eigen(prim_l.clone(), a_index);
@@ -183,3 +197,67 @@ pub fn compute_time_step(prim_l: (f64, f64, f64, f64, f64, f64, f64, f64), prim_
         }    
         dt
     }
+
+/// Input:
+/// Output:
+/// Description:
+pub fn sgn(num: f64) -> f64 {
+    let mut sign: f64;
+    if num > 0.0 {
+        sign = 1.0;
+    } else if num < 0.0 {
+        sign = -1.0;
+    }
+    else {
+        sign = 0.0;
+    }
+    sign
+}
+
+/// Input:
+/// Output:
+/// Description:
+pub fn minmod(x: f64, y: f64, z: f64) -> f64 {
+    let mm_1 = (sgn(x) + sgn(y)).abs();
+    let mm_2 = sgn(x) + sgn(z);
+    let mm_3 = tuple_min((x.abs(), y.abs(), z.abs()));
+    let mm = 0.25 * mm_1 * mm_2 * mm_3;
+    mm
+}
+
+/// Input:
+/// Output:
+/// Description:
+pub fn left_reconstruction(c_min: f64, c_mid: f64, c_max: f64) -> f64 {
+    let arg1 = 1.5 * (c_mid - c_min);
+    let arg2 = 0.5 * (c_max - c_mid);
+    let arg3 = 1.5 * (c_max - c_mid);
+    let cl = c_mid + 0.5 * minmod(arg1, arg2, arg3);
+    cl
+}
+
+/// Input:
+/// Output:
+/// Description:
+pub fn right_reconstruction(c_min: f64, c_mid: f64, c_max: f64) -> f64 {
+    let arg1 = 1.5 * (c_mid - c_min);
+    let arg2 = 0.5 * (c_max - c_min);
+    let arg3 = 1.5 * (c_max - c_mid);
+    let cr = c_mid - 0.5 * minmod(arg1, arg2, arg3);
+    cr
+}
+
+/// Input:
+/// Output:
+/// Description:
+pub fn vector_index(vec: Vec<u8>, desired_val: u8) -> Vec<u8> {
+    let mut count: u8 = 0;
+    let mut index_vec = Vec::new();
+    for i in vec {
+        if i == desired_val{
+            index_vec.push(count);
+        }
+        count += 1;
+    }
+    index_vec
+}

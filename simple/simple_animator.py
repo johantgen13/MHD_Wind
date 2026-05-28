@@ -136,9 +136,9 @@ ax[2,1].set_ylabel(r'$P$', fontsize=15)
 
 ax[0,0].vlines(0.5, 0.0, 1.1, color="black", alpha=0.3)
 ax[1,0].vlines(0.5, -0.4, 0.8, color="black", alpha=0.3)
-ax[1,1].vlines(-1.8, 0.2, 1.1, color="black", alpha=0.3)
-ax[2,0].vlines(-1.25, 1.25, 1.1, color="black", alpha=0.3)
-ax[2,1].vlines(-0.05, 1.15, 1.1, color="black", alpha=0.3)
+ax[1,1].vlines(0.5, -1.8, 0.2, color="black", alpha=0.3)
+ax[2,0].vlines(0.5, -1.25, 1.25, color="black", alpha=0.3)
+ax[2,1].vlines(0.5, -0.05, 1.15, color="black", alpha=0.3)
 
 animation = FuncAnimation(fig=fig, 
                     func=animation_func, 
