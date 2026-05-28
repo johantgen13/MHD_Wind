@@ -1,4 +1,14 @@
- ## May 26 2026
+ ## May 27 2026
+ - Wrote the simple animator python script
+ - Updated the CHANGELOG file.
+ - Updated the README file.
+ - Documentation was written for these functions:
+   - total energy (location: simple/math_func.rs)
+   - prim to cons (location: simple/math_func.rs)
+   - cons to prim (location: simple/math_func.rs)
+   - flux (location: simple/math_func.rs)
+ - Implemented performance metric
+ - Began implementation of higher resolution solution
  
  ## May 25 2026
  - Finished writing the simple mhd code.
