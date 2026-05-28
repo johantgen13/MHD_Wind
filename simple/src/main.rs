@@ -14,7 +14,7 @@ pub mod math_func;
 /////////////////////
 // Useful Variables
 /////////////////////
-const CELL_NUM: f64 = 10.0;
+const CELL_NUM: f64 = 800.0;
 const DISCON: f64 = 0.5;
 const ADIABATIC: f64 = 2.0;
 const DR: f64 = 1.0 / CELL_NUM;
@@ -215,7 +215,8 @@ fn write_checkpoint(prims: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, t: f64
 
     let mut prims_fill = Vec::new();
     for i in 1..((CELL_NUM+1.0) as u64) {
-        prims_fill.push(prims[i]);
+        let index: usize = (i).try_into().unwrap();
+        prims_fill.push(prims[index]);
     }
 
     for i in prims_fill {
@@ -296,12 +297,12 @@ fn main() {
             let index_2: usize = (i+1).try_into().unwrap();
             let dt_check = math_func::compute_time_step(primitives[index_1], primitives[index_2], ADIABATIC, DR);
             if dt_check < dt {
-                dt = dt_check; n
+                dt = dt_check; 
                 }
             }
         dt = CFL * dt;
         
-         conserved_vec = l_function(primitives.clone(), conserve, dt);
+        conserved_vec = l_function(primitives.clone(), conserve, dt);
 
         if t >= t_checkpoint {
             let _ = write_checkpoint(primitives.clone(), t, check_count);
