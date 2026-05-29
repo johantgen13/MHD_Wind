@@ -14,7 +14,7 @@ pub mod math_func;
 /////////////////////
 // Useful Variables
 /////////////////////
-const CELL_NUM: f64 = 10.0;
+const CELL_NUM: f64 = 800.0;
 const DISCON: f64 = 0.5;
 const ADIABATIC: f64 = 2.0;
 const DR: f64 = 1.0 / CELL_NUM;
