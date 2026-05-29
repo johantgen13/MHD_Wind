@@ -185,10 +185,64 @@ fn l_function(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec
     new_cons_vec
 }
 
-// Input:
-// Output:
-// Description:
-//fn rk4_step()
+/// Input:
+/// Output:
+/// Description:
+fn rk4_step(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: Vec<(f64, f64, f64, f64, f64, f64, f64)>, dt: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
+    let l_cons = l_function(prims_vec.clone(), cons_vec.clone(), dt);
+    let mut cons_1 = Vec::new();
+    cons_1.push(cons_vec[0]);
+    for i in 1..((CELL_NUM + 1.0) as u64) {
+        let index_a: usize = (i).try_into.unwrap();
+        let fill_0 = cons_vec[index_a].0 + dt * l_cons[index_a].0;
+        let fill_1 = cons_vec[index_a].1 + dt * l_cons[index_a].1;
+        let fill_2 = cons_vec[index_a].2 + dt * l_cons[index_a].2;
+        let fill_3 = cons_vec[index_a].3 + dt * l_cons[index_a].3;
+        let fill_4 = cons_vec[index_a].4 + dt * l_cons[index_a].4;
+        let fill_5 = cons_vec[index_a].5 + dt * l_cons[index_a].5;
+        let fill_6 = cons_vec[index_a].6 + dt * l_cons[index_a].6;
+        let fill = (fill_0, fill_1, fill_2, fill_3, fill_4, fill_5, fill_6);
+        cons_1.push(fill);
+    }
+    let b = (CELL_NUM + 1.0) as u64;
+    let index_b: usize = (b).try_into().unwrap();
+    cons_1.push(cons_vec[index_b]);
+
+    let l_cons_1 = l_function(prims_vec.clone(), cons_1.clone(), dt);
+    let mut cons_2 = Vec::new();
+    cons_2.push(cons_vec[0]);
+    for i in 1..((CELL_NUM + 1.0) as u64) {
+        let index_c: usize = (i).try_into.unwrap();
+        let fill_0 = 0.75 * cons_vec[index_c].0 + 0.25 * cons_1[index_c].0 + 0.25 * dt * l_cons_1[index_c].0;
+        let fill_1 = 0.75 * cons_vec[index_c].1 + 0.25 * cons_1[index_c].1 + 0.25 * dt * l_cons_1[index_c].1;
+        let fill_2 = 0.75 * cons_vec[index_c].2 + 0.25 * cons_1[index_c].2 + 0.25 * dt * l_cons_1[index_c].2;
+        let fill_3 = 0.75 * cons_vec[index_c].3 + 0.25 * cons_1[index_c].3 + 0.25 * dt * l_cons_1[index_c].3;
+        let fill_4 = 0.75 * cons_vec[index_c].4 + 0.25 * cons_1[index_c].4 + 0.25 * dt * l_cons_1[index_c].4;
+        let fill_5 = 0.75 * cons_vec[index_c].5 + 0.25 * cons_1[index_c].5 + 0.25 * dt * l_cons_1[index_c].5;
+        let fill_6 = 0.75 * cons_vec[index_c].6 + 0.25 * cons_1[index_c].6 + 0.25 * dt * l_cons_1[index_c].6;
+        let fill = (fill_0, fill_1, fill_2, fill_3, fill_4, fill_5, fill_6);
+        cons_2.push(fill);
+    }
+    cons_2.push(cons_vec[index_b]);
+
+    let l_cons_2 = l_function(prims_vec.clone(), cons_2.clone(), dt);
+    let mut new_cons = Vec::new();
+    new_cons.push(cons_vec[0]);
+    for i in 1..((CELL_NUM + 1.0) as u64) {
+        let index_d: usize = (i).try_into.unwrap();
+        let fill_0 = 0.33 * cons_vec[index_d].0 + 0.67 * cons_2[index_d].0 + 0.67 * dt * l_cons_2[index_d].0;
+        let fill_1 = 0.33 * cons_vec[index_d].1 + 0.67 * cons_2[index_d].1 + 0.67 * dt * l_cons_2[index_d].1;
+        let fill_2 = 0.33 * cons_vec[index_d].2 + 0.67 * cons_2[index_d].2 + 0.67 * dt * l_cons_2[index_d].2;
+        let fill_3 = 0.33 * cons_vec[index_d].3 + 0.67 * cons_2[index_d].3 + 0.67 * dt * l_cons_2[index_d].3;
+        let fill_4 = 0.33 * cons_vec[index_d].4 + 0.67 * cons_2[index_d].4 + 0.67 * dt * l_cons_2[index_d].4;
+        let fill_5 = 0.33 * cons_vec[index_d].5 + 0.67 * cons_2[index_d].5 + 0.67 * dt * l_cons_2[index_d].5;
+        let fill_6 = 0.33 * cons_vec[index_d].6 + 0.67 * cons_2[index_d].6 + 0.67 * dt * l_cons_2[index_d].6;
+        let fill = (fill_0, fill_1, fill_2, fill_3, fill_4, fill_5, fill_6);
+        new_cons.push(fill);
+    }
+    new_cons.push(cons_vec[index_b]);
+    new_cons
+}
 
 /// Input:
 /// Output:
@@ -302,7 +356,7 @@ fn main() {
             }
         dt = CFL * dt;
         
-        conserved_vec = l_function(primitives.clone(), conserve, dt);
+        conserved_vec = rk4_step(primitives.clone(), conserve, dt);
 
         if t >= t_checkpoint {
             let _ = write_checkpoint(primitives.clone(), t, check_count);
