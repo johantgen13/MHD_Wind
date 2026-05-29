@@ -202,7 +202,7 @@ pub fn compute_time_step(prim_l: (f64, f64, f64, f64, f64, f64, f64, f64), prim_
 /// Output:
 /// Description:
 pub fn sgn(num: f64) -> f64 {
-    let mut sign: f64;
+    let sign: f64;
     if num > 0.0 {
         sign = 1.0;
     } else if num < 0.0 {
