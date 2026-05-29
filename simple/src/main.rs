@@ -193,7 +193,7 @@ fn rk4_step(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: 
     let mut cons_1 = Vec::new();
     cons_1.push(cons_vec[0]);
     for i in 1..((CELL_NUM + 1.0) as u64) {
-        let index_a: usize = (i).try_into.unwrap();
+        let index_a: usize = (i).try_into().unwrap();
         let fill_0 = cons_vec[index_a].0 + dt * l_cons[index_a].0;
         let fill_1 = cons_vec[index_a].1 + dt * l_cons[index_a].1;
         let fill_2 = cons_vec[index_a].2 + dt * l_cons[index_a].2;
@@ -212,7 +212,7 @@ fn rk4_step(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: 
     let mut cons_2 = Vec::new();
     cons_2.push(cons_vec[0]);
     for i in 1..((CELL_NUM + 1.0) as u64) {
-        let index_c: usize = (i).try_into.unwrap();
+        let index_c: usize = (i).try_into().unwrap();
         let fill_0 = 0.75 * cons_vec[index_c].0 + 0.25 * cons_1[index_c].0 + 0.25 * dt * l_cons_1[index_c].0;
         let fill_1 = 0.75 * cons_vec[index_c].1 + 0.25 * cons_1[index_c].1 + 0.25 * dt * l_cons_1[index_c].1;
         let fill_2 = 0.75 * cons_vec[index_c].2 + 0.25 * cons_1[index_c].2 + 0.25 * dt * l_cons_1[index_c].2;
@@ -229,7 +229,7 @@ fn rk4_step(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: 
     let mut new_cons = Vec::new();
     new_cons.push(cons_vec[0]);
     for i in 1..((CELL_NUM + 1.0) as u64) {
-        let index_d: usize = (i).try_into.unwrap();
+        let index_d: usize = (i).try_into().unwrap();
         let fill_0 = 0.33 * cons_vec[index_d].0 + 0.67 * cons_2[index_d].0 + 0.67 * dt * l_cons_2[index_d].0;
         let fill_1 = 0.33 * cons_vec[index_d].1 + 0.67 * cons_2[index_d].1 + 0.67 * dt * l_cons_2[index_d].1;
         let fill_2 = 0.33 * cons_vec[index_d].2 + 0.67 * cons_2[index_d].2 + 0.67 * dt * l_cons_2[index_d].2;
