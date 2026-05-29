@@ -14,7 +14,7 @@ pub mod math_func;
 /////////////////////
 // Useful Variables
 /////////////////////
-const CELL_NUM: f64 = 800.0;
+const CELL_NUM: f64 = 10.0;
 const DISCON: f64 = 0.5;
 const ADIABATIC: f64 = 2.0;
 const DR: f64 = 1.0 / CELL_NUM;
@@ -169,13 +169,13 @@ fn l_function(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec
     for i in 1..((CELL_NUM + 1.0) as u64) {
         let index_1: usize = (i).try_into().unwrap();
         let index_2: usize = (i-1).try_into().unwrap();
-        let new_0 = cons_vec[index_1].0 - (go_vec[index_1].0 - go_vec[index_2].0) * dt / DR;
-        let new_1 = cons_vec[index_1].1 - (go_vec[index_1].1 - go_vec[index_2].1) * dt / DR;
-        let new_2 = cons_vec[index_1].2 - (go_vec[index_1].2 - go_vec[index_2].2) * dt / DR;
-        let new_3 = cons_vec[index_1].3 - (go_vec[index_1].3 - go_vec[index_2].3) * dt / DR;
-        let new_4 = cons_vec[index_1].4 - (go_vec[index_1].4 - go_vec[index_2].4) * dt / DR;
-        let new_5 = cons_vec[index_1].5 - (go_vec[index_1].5 - go_vec[index_2].5) * dt / DR;
-        let new_6 = cons_vec[index_1].6 - (go_vec[index_1].6 - go_vec[index_2].6) * dt / DR;
+        let new_0 = - (go_vec[index_1].0 - go_vec[index_2].0) / DR;
+        let new_1 = - (go_vec[index_1].1 - go_vec[index_2].1) / DR;
+        let new_2 = - (go_vec[index_1].2 - go_vec[index_2].2) / DR;
+        let new_3 = - (go_vec[index_1].3 - go_vec[index_2].3) / DR;
+        let new_4 = - (go_vec[index_1].4 - go_vec[index_2].4) / DR;
+        let new_5 = - (go_vec[index_1].5 - go_vec[index_2].5) / DR;
+        let new_6 = - (go_vec[index_1].6 - go_vec[index_2].6) / DR;
         let new_fill = (new_0, new_1, new_2, new_3, new_4, new_5, new_6);
         new_cons_vec.push(new_fill);
     }
@@ -208,7 +208,8 @@ fn rk4_step(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: 
     let index_b: usize = (b).try_into().unwrap();
     cons_1.push(cons_vec[index_b]);
 
-    let l_cons_1 = l_function(prims_vec.clone(), cons_1.clone(), dt);
+    let prims_1 = prim_vec_from_cons(cons_1.clone(), ADIABATIC, BX);
+    let l_cons_1 = l_function(prims_1.clone(), cons_1.clone(), dt);
     let mut cons_2 = Vec::new();
     cons_2.push(cons_vec[0]);
     for i in 1..((CELL_NUM + 1.0) as u64) {
@@ -225,7 +226,8 @@ fn rk4_step(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: 
     }
     cons_2.push(cons_vec[index_b]);
 
-    let l_cons_2 = l_function(prims_vec.clone(), cons_2.clone(), dt);
+    let prims_2 = prim_vec_from_cons(cons_1.clone(), ADIABATIC, BX);
+    let l_cons_2 = l_function(prims_2.clone(), cons_2.clone(), dt);
     let mut new_cons = Vec::new();
     new_cons.push(cons_vec[0]);
     for i in 1..((CELL_NUM + 1.0) as u64) {
@@ -338,8 +340,6 @@ fn main() {
 
     let initial_primitives = init_prim();
     let mut conserved_vec = cons_vec_from_prim(initial_primitives.clone(), ADIABATIC);
-    //let test_val = l_function(initial_primitives, conserved_vec, 0.01);
-    //println!("{:?}", test_val);
 
     while t < T_FINAL {
         let primitives = prim_vec_from_cons(conserved_vec.clone(), ADIABATIC, BX);
