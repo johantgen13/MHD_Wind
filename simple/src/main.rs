@@ -59,7 +59,7 @@ fn init_prim() -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
 /// Input:
 /// Output:
 /// Description:
-fn cons_vec_from_prim(prims: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
+fn cons_vec_from_prim(prims: &Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
     let mut cons_vec = Vec::new();
     for i in 0..(CELL_NUM+2) {
         cons_vec.push(math_func::prim_to_cons(prims[i], a_index));
@@ -70,7 +70,7 @@ fn cons_vec_from_prim(prims: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_in
 /// Input:
 /// Output:
 /// Description:
-fn prim_vec_from_cons(cons: Vec<(f64, f64, f64, f64, f64, f64, f64)>, a_index: f64, bx: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
+fn prim_vec_from_cons(cons: &Vec<(f64, f64, f64, f64, f64, f64, f64)>, a_index: f64, bx: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
     let mut prims_vec = Vec::new();
     for i in 0..(CELL_NUM+2) {
         prims_vec.push(math_func::cons_to_prim(cons[i], a_index, bx));
@@ -103,15 +103,15 @@ fn hll_flux(prim_1: (f64, f64, f64, f64, f64, f64, f64, f64), prim_2: (f64, f64,
     let prim_l = (p_l, rho_l, vx_l, vy_l, vz_l, bx_l, by_l, bz_l);
     let prim_r = (p_r, rho_r, vx_r, vy_r, vz_r, bx_r, by_r, bz_r);
 
-    let plus_l = math_func::max_eigen(prim_l.clone(), a_index);
-    let minus_l = math_func::min_eigen(prim_l.clone(), a_index);
-    let u_l = math_func::prim_to_cons(prim_l.clone(), a_index);
-    let f_l = math_func::flux(prim_l.clone(), a_index);
+    let plus_l = math_func::max_eigen(prim_l, a_index);
+    let minus_l = math_func::min_eigen(prim_l, a_index);
+    let u_l = math_func::prim_to_cons(prim_l, a_index);
+    let f_l = math_func::flux(prim_l, a_index);
 
-    let plus_r = math_func::max_eigen(prim_r.clone(), a_index);
-    let minus_r = math_func::min_eigen(prim_r.clone(), a_index);
-    let u_r = math_func::prim_to_cons(prim_r.clone(), a_index);
-    let f_r = math_func::flux(prim_r.clone(), a_index);
+    let plus_r = math_func::max_eigen(prim_r, a_index);
+    let minus_r = math_func::min_eigen(prim_r, a_index);
+    let u_r = math_func::prim_to_cons(prim_r, a_index);
+    let f_r = math_func::flux(prim_r, a_index);
 
     let a_plus = math_func::tuple_max((0.0, plus_l, plus_r));
     let a_minus = math_func::tuple_max((0.0, -minus_l, -minus_r));
@@ -144,7 +144,7 @@ fn godonov(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f6
 /// Input:
 /// Output:
 /// Description:
-fn l_function(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: Vec<(f64, f64, f64, f64, f64, f64, f64)>) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
+fn l_function(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: &Vec<(f64, f64, f64, f64, f64, f64, f64)>) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
     let go_vec = godonov(prims_vec, ADIABATIC);
     let mut new_cons_vec = Vec::new();
     new_cons_vec.push(cons_vec[0]);
@@ -166,8 +166,8 @@ fn l_function(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec
 /// Input:
 /// Output:
 /// Description:
-fn rk4_step(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: Vec<(f64, f64, f64, f64, f64, f64, f64)>, dt: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
-    let l_cons = l_function(prims_vec.clone(), cons_vec.clone());
+fn rk4_step(prims_vec: &Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: Vec<(f64, f64, f64, f64, f64, f64, f64)>, dt: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
+    let l_cons = l_function(prims_vec.to_vec(), &cons_vec);
     let mut cons_1 = Vec::new();
     cons_1.push(cons_vec[0]);
     for i in 1..(CELL_NUM+1) {
@@ -183,8 +183,8 @@ fn rk4_step(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: 
     }
     cons_1.push(cons_vec[CELL_NUM+1]);
 
-    let prims_1 = prim_vec_from_cons(cons_1.clone(), ADIABATIC, BX);
-    let l_cons_1 = l_function(prims_1.clone(), cons_1.clone());
+    let prims_1 = prim_vec_from_cons(&cons_1, ADIABATIC, BX);
+    let l_cons_1 = l_function(prims_1, &cons_1);
     let mut cons_2 = Vec::new();
     cons_2.push(cons_vec[0]);
     for i in 1..(CELL_NUM+1) {
@@ -200,8 +200,8 @@ fn rk4_step(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: 
     }
     cons_2.push(cons_vec[CELL_NUM+1]);
 
-    let prims_2 = prim_vec_from_cons(cons_1.clone(), ADIABATIC, BX);
-    let l_cons_2 = l_function(prims_2.clone(), cons_2.clone());
+    let prims_2 = prim_vec_from_cons(&cons_1, ADIABATIC, BX);
+    let l_cons_2 = l_function(prims_2, &cons_2);
     let mut new_cons = Vec::new();
     new_cons.push(cons_vec[0]);
     for i in 1..(CELL_NUM+1) {
@@ -311,12 +311,12 @@ fn main() {
     let mut check_count: i8 = 0;
 
     let initial_primitives = init_prim();
-    let mut conserved_vec = cons_vec_from_prim(initial_primitives.clone(), ADIABATIC);
+    let mut conserved_vec = cons_vec_from_prim(&initial_primitives, ADIABATIC);
     //println!("{:?}", initial_primitives);
 
     while t < T_FINAL {
-        let primitives = prim_vec_from_cons(conserved_vec.clone(), ADIABATIC, BX);
-        let conserve = cons_vec_from_prim(primitives.clone(), ADIABATIC);
+        let primitives = prim_vec_from_cons(&conserved_vec, ADIABATIC, BX);
+        let conserve = cons_vec_from_prim(&primitives, ADIABATIC);
         
         let mut dt = 1.0;
         for i in 0..(CELL_NUM-1) {
@@ -327,10 +327,10 @@ fn main() {
             }
         dt = CFL * dt;
         
-        conserved_vec = rk4_step(primitives.clone(), conserve, dt);
+        conserved_vec = rk4_step(&primitives, conserve, dt);
 
         if t >= t_checkpoint {
-            let _ = write_checkpoint(primitives.clone(), t, check_count);
+            let _ = write_checkpoint(primitives, t, check_count);
             t_checkpoint += CHECK_INTERVAL;
             check_count += 1;
             }
