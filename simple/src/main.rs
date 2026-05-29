@@ -167,7 +167,7 @@ fn l_function(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec
 /// Output:
 /// Description:
 fn rk4_step(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: Vec<(f64, f64, f64, f64, f64, f64, f64)>, dt: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
-    let l_cons = l_function(prims_vec.clone(), cons_vec.clone(), dt);
+    let l_cons = l_function(prims_vec.clone(), cons_vec.clone());
     let mut cons_1 = Vec::new();
     cons_1.push(cons_vec[0]);
     for i in 1..(CELL_NUM+1) {
@@ -184,7 +184,7 @@ fn rk4_step(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: 
     cons_1.push(cons_vec[CELL_NUM+1]);
 
     let prims_1 = prim_vec_from_cons(cons_1.clone(), ADIABATIC, BX);
-    let l_cons_1 = l_function(prims_1.clone(), cons_1.clone(), dt);
+    let l_cons_1 = l_function(prims_1.clone(), cons_1.clone());
     let mut cons_2 = Vec::new();
     cons_2.push(cons_vec[0]);
     for i in 1..(CELL_NUM+1) {
@@ -201,7 +201,7 @@ fn rk4_step(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: 
     cons_2.push(cons_vec[CELL_NUM+1]);
 
     let prims_2 = prim_vec_from_cons(cons_1.clone(), ADIABATIC, BX);
-    let l_cons_2 = l_function(prims_2.clone(), cons_2.clone(), dt);
+    let l_cons_2 = l_function(prims_2.clone(), cons_2.clone());
     let mut new_cons = Vec::new();
     new_cons.push(cons_vec[0]);
     for i in 1..(CELL_NUM+1) {
