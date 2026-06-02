@@ -38,7 +38,7 @@ pub fn total_energy(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64
 ///     The conserved variable has the components rho, rho * vx, rho * vy, rho * vz,
 ///     By, Bz, and E. This function uses the total energy function.
 pub fn prim_to_cons(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> (f64, f64, f64, f64, f64, f64, f64) {
-    let e = total_energy(prim, a_index);
+    let e = total_energy(prim.clone(), a_index);
     let con = (prim.1, prim.1 * prim.2, prim.1 * prim.3, prim.1 * prim.4, prim.6, prim.7, e);
     con
 }
@@ -71,8 +71,8 @@ pub fn cons_to_prim(con: (f64, f64, f64, f64, f64, f64, f64), a_index: f64, bx: 
 ///     This function takes the primitive variable to construct the flux.
 ///     This function uses the total pressure and total energy functions.
 pub fn flux(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> (f64, f64, f64, f64, f64, f64, f64) {
-    let p = total_pressure(prim);
-    let e = total_energy(prim, a_index);
+    let p = total_pressure(prim.clone());
+    let e = total_energy(prim.clone(), a_index);
     let f0 = prim.1 * prim.2;
     let f1 = prim.1 * prim.2 * prim.2 + p - prim.5 * prim.5;
     let f2 = prim.1 * prim.2 * prim.3 - prim.5 * prim.6;
@@ -150,7 +150,7 @@ pub fn slow_magsonic_speed(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_ind
 ///     this function and the primitive variables and adiabatic index. It 
 ///     uses the equation: max = vx + cf.
 pub fn max_eigen(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> f64 {
-    let cf = fast_magsonic_speed(prim, a_index);
+    let cf = fast_magsonic_speed(prim.clone(), a_index);
     let max = prim.2 + cf;
     max
 }
@@ -165,7 +165,7 @@ pub fn max_eigen(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -
 ///     this function and the primitive variables and adiabatic index. It 
 ///     uses the equation: min = vx - cf.
 pub fn min_eigen(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> f64 {
-    let cf = fast_magsonic_speed(prim, a_index);
+    let cf = fast_magsonic_speed(prim.clone(), a_index);
     let min = prim.2 - cf;
     min
 }
@@ -216,11 +216,11 @@ pub fn tuple_min(tup: (f64, f64, f64)) -> f64 {
 ///     dt: the timestep
 /// Description:
 pub fn compute_time_step(prim_l: (f64, f64, f64, f64, f64, f64, f64, f64), prim_r: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64, dx: f64) -> f64 {
-        let plus_l = max_eigen(prim_l, a_index);
-        let minus_l = min_eigen(prim_l, a_index);
+        let plus_l = max_eigen(prim_l.clone(), a_index);
+        let minus_l = min_eigen(prim_l.clone(), a_index);
     
-        let plus_r = max_eigen(prim_r, a_index);
-        let minus_r = min_eigen(prim_r, a_index);
+        let plus_r = max_eigen(prim_r.clone(), a_index);
+        let minus_r = min_eigen(prim_r.clone(), a_index);
     
         let a_plus = tuple_max((0.0, plus_l, plus_r));
         let a_minus = tuple_max((0.0, -minus_l, -minus_r));
