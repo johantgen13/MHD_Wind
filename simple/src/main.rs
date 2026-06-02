@@ -1,7 +1,7 @@
 // This is a simple non-relativisetic 1D MHD code.
 //
 // Author: Brayden JoHantgen
-// Last Update: 5/29/2026
+// Last Update: 6/1/2026
 
 use std::fs;
 //use std::str;
@@ -14,11 +14,11 @@ pub mod math_func;
 /////////////////////
 // Useful Variables
 /////////////////////
-const CELL_NUM: usize = 100;
+const CELL_NUM: usize = 800;
 const DISCON: f64 = 0.5;
 const ADIABATIC: f64 = 2.0;
 const DR: f64 = 1.0 / (CELL_NUM as f64);
-const T_FINAL: f64 = 1.26;
+const T_FINAL: f64 = 0.126;
 const CHECK_INTERVAL: f64 = 0.025;
 const CFL: f64 = 0.8;
 const BX: f64 = 0.75;
@@ -45,7 +45,7 @@ const BX: f64 = 0.75;
 /// Output:
 /// Description:
 fn init_prim() -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
-    let mut init_primitive = Vec::new();
+    let mut init_primitive = Vec::with_capacity(CELL_NUM + 2);
     for i in 0..(CELL_NUM + 2) {
         if i < (((CELL_NUM as f64) * DISCON + 1.0) as usize) {
             init_primitive.push((1.0, 1.0, 0.0, 0.0, 0.0, BX, 1.0, 0.0));
@@ -60,7 +60,7 @@ fn init_prim() -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
 /// Output:
 /// Description:
 fn cons_vec_from_prim(prims: &Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
-    let mut cons_vec = Vec::new();
+    let mut cons_vec = Vec::with_capacity(CELL_NUM+2);
     for i in 0..(CELL_NUM+2) {
         cons_vec.push(math_func::prim_to_cons(prims[i], a_index));
     }
@@ -71,7 +71,7 @@ fn cons_vec_from_prim(prims: &Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_i
 /// Output:
 /// Description:
 fn prim_vec_from_cons(cons: &Vec<(f64, f64, f64, f64, f64, f64, f64)>, a_index: f64, bx: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
-    let mut prims_vec = Vec::new();
+    let mut prims_vec = Vec::with_capacity(CELL_NUM+2);
     for i in 0..(CELL_NUM+2) {
         prims_vec.push(math_func::cons_to_prim(cons[i], a_index, bx));
     }
@@ -131,7 +131,7 @@ fn hll_flux(prim_1: (f64, f64, f64, f64, f64, f64, f64, f64), prim_2: (f64, f64,
 /// Output:
 /// Description:
 fn godonov(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
-    let mut go_vec = Vec::new();
+    let mut go_vec = Vec::with_capacity(CELL_NUM-1);
     go_vec.push(hll_flux(prims_vec[0], prims_vec[1], prims_vec[2], prims_vec[3], a_index));
     for i in 1..CELL_NUM {
         let go_fill = hll_flux(prims_vec[i-1], prims_vec[i], prims_vec[i+1], prims_vec[i+2], a_index);
@@ -146,7 +146,7 @@ fn godonov(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f6
 /// Description:
 fn l_function(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: &Vec<(f64, f64, f64, f64, f64, f64, f64)>) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
     let go_vec = godonov(prims_vec, ADIABATIC);
-    let mut new_cons_vec = Vec::new();
+    let mut new_cons_vec = Vec::with_capacity(CELL_NUM+2);
     new_cons_vec.push(cons_vec[0]);
     for i in 1..(CELL_NUM+1) {
         let new_0 = - (go_vec[i].0 - go_vec[i-1].0) / DR;
@@ -168,7 +168,7 @@ fn l_function(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec
 /// Description:
 fn rk4_step(prims_vec: &Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: Vec<(f64, f64, f64, f64, f64, f64, f64)>, dt: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
     let l_cons = l_function(prims_vec.to_vec(), &cons_vec);
-    let mut cons_1 = Vec::new();
+    let mut cons_1 = Vec::with_capacity(CELL_NUM+2);
     cons_1.push(cons_vec[0]);
     for i in 1..(CELL_NUM+1) {
         let fill_0 = cons_vec[i].0 + dt * l_cons[i].0;
@@ -185,7 +185,7 @@ fn rk4_step(prims_vec: &Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec:
 
     let prims_1 = prim_vec_from_cons(&cons_1, ADIABATIC, BX);
     let l_cons_1 = l_function(prims_1, &cons_1);
-    let mut cons_2 = Vec::new();
+    let mut cons_2 = Vec::with_capacity(CELL_NUM+2);
     cons_2.push(cons_vec[0]);
     for i in 1..(CELL_NUM+1) {
         let fill_0 = 0.75 * cons_vec[i].0 + 0.25 * cons_1[i].0 + 0.25 * dt * l_cons_1[i].0;
@@ -200,9 +200,9 @@ fn rk4_step(prims_vec: &Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec:
     }
     cons_2.push(cons_vec[CELL_NUM+1]);
 
-    let prims_2 = prim_vec_from_cons(&cons_1, ADIABATIC, BX);
+    let prims_2 = prim_vec_from_cons(&cons_2, ADIABATIC, BX);
     let l_cons_2 = l_function(prims_2, &cons_2);
-    let mut new_cons = Vec::new();
+    let mut new_cons = Vec::with_capacity(CELL_NUM+2);
     new_cons.push(cons_vec[0]);
     for i in 1..(CELL_NUM+1) {
         let fill_0 = 0.33 * cons_vec[i].0 + 0.67 * cons_2[i].0 + 0.67 * dt * l_cons_2[i].0;
@@ -242,7 +242,7 @@ fn write_checkpoint(prims: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, t: f64
     let mut by_string = "By: ".to_string();
     let mut bz_string = "Bz: ".to_string();
 
-    let mut prims_fill = Vec::new();
+    let mut prims_fill = Vec::with_capacity(CELL_NUM);
     for i in 1..(CELL_NUM+1) {
         prims_fill.push(prims[i]);
     }

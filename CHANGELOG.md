@@ -1,7 +1,24 @@
+ ## June 1 2026
+ - Updated the README file.
+ - Updated the CHANGELOG file.
+ - Worked on performance:
+   - Pre-allocation of vector sizes.
+   - Removed Index Conversions
+   - Removed many cloning vectors.
+ 
+ ## May 28 2026
+ - Updated the CHANGELOG file.
+ - Began writing functions for higher order solutions:
+   - rk4_step (location: simple/main.rs)
+   - sgn (location: simple/math_func.rs)
+   - minmod (location: simple/math_func.rs)
+   - left reconstruction (location: simple/math_func.rs)
+   - right reconstruction (location: simple/math_func.rs)
+   - tuple min (location: simple/math_func.rs)
+ 
  ## May 27 2026
  - Wrote the simple animator python script
  - Updated the CHANGELOG file.
- - Updated the README file.
  - Documentation was written for these functions:
    - total energy (location: simple/math_func.rs)
    - prim to cons (location: simple/math_func.rs)

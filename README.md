@@ -1,7 +1,9 @@
 # MHD_Wind
 Summer Project 2026
 
-This project is the development of a 1D relativistic MHD code to model engine-powered supernovae.
-The main.rc file is located in the src folder in the magneto folder in this repository and is the simulation file.
+This project involves the development an MHD code to model engine-powered supernovae.
+Two different MHD simulations are currently being developed.
+In the simple folder the Newtonian MHD code is being worked on and the magneto folder is the workspace for the relativistic MHD code.
 The CHANGELOG file shows every change made to the repository during the duration of this project.
-In the magneto folder there is a python script that will animate the density of the gas. This animation script must be run after the rust simulation.
+There are pyhton scripts that have been written to animate teh simulations after they have been run.
+There are config files that are to be edited to alter the parameters of each simulation.
