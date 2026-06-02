@@ -1,3 +1,14 @@
+ ## June 2 2026
+ - Updated the CHANGELOG file.
+ - Documentation was written for these functions:
+   - sound speed (location: simple/math_func.rs)
+   - Alfven speed (location: simple/math_func.rs)
+   - fast magneto sonic speed (location: simple/math_func.rs)
+   - slow magneto sonic speed (location: simple/math_func.rs)
+   - max eigen (location: simple/math_func.rs)
+   - min eigen (location: simple/math_func.rs)
+   - tuple min (location: simple/math_func.rs)
+ 
  ## June 1 2026
  - Updated the README file.
  - Updated the CHANGELOG file.

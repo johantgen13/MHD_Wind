@@ -1,7 +1,7 @@
-// This is a simple non-relativisetic 1D MHD code.
+// This is a simple non-relativistic 1D MHD code.
 //
 // Author: Brayden JoHantgen
-// Last Update: 6/1/2026
+// Last Update: 6/2/2026
 
 use std::fs;
 //use std::str;
@@ -14,11 +14,11 @@ pub mod math_func;
 /////////////////////
 // Useful Variables
 /////////////////////
-const CELL_NUM: usize = 800;
+const CELL_NUM: usize = 10000;
 const DISCON: f64 = 0.5;
 const ADIABATIC: f64 = 2.0;
 const DR: f64 = 1.0 / (CELL_NUM as f64);
-const T_FINAL: f64 = 0.126;
+const T_FINAL: f64 = 0.252;
 const CHECK_INTERVAL: f64 = 0.025;
 const CFL: f64 = 0.8;
 const BX: f64 = 0.75;

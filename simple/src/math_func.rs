@@ -1,7 +1,7 @@
 // This file is full of functions to supplement the simple 1D mhd code.
 //
 // Author: Brayden JoHantgen
-// Last Update: 5/28/2026
+// Last Update: 6/2/2026
 
 /// Input:
 ///     prim: the eight component array of the primitive variables
@@ -38,7 +38,7 @@ pub fn total_energy(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64
 ///     The conserved variable has the components rho, rho * vx, rho * vy, rho * vz,
 ///     By, Bz, and E. This function uses the total energy function.
 pub fn prim_to_cons(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> (f64, f64, f64, f64, f64, f64, f64) {
-    let e = total_energy(prim.clone(), a_index);
+    let e = total_energy(prim, a_index);
     let con = (prim.1, prim.1 * prim.2, prim.1 * prim.3, prim.1 * prim.4, prim.6, prim.7, e);
     con
 }
@@ -71,8 +71,8 @@ pub fn cons_to_prim(con: (f64, f64, f64, f64, f64, f64, f64), a_index: f64, bx: 
 ///     This function takes the primitive variable to construct the flux.
 ///     This function uses the total pressure and total energy functions.
 pub fn flux(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> (f64, f64, f64, f64, f64, f64, f64) {
-    let p = total_pressure(prim.clone());
-    let e = total_energy(prim.clone(), a_index);
+    let p = total_pressure(prim);
+    let e = total_energy(prim, a_index);
     let f0 = prim.1 * prim.2;
     let f1 = prim.1 * prim.2 * prim.2 + p - prim.5 * prim.5;
     let f2 = prim.1 * prim.2 * prim.3 - prim.5 * prim.6;
@@ -86,8 +86,13 @@ pub fn flux(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> (f6
 
 /// Input:
 ///     prim: the eight component array of the primitive variables
+///     a index: the adiabatic index
 /// Output:
+///     a: the sound speed of the gas
 /// Description:
+///     This function uses the primitive variables and the adiabatic index
+///     to calculate the sound speed of the gas with the following equation:
+///     cs = sqrt(gamma * P / rho). 
 pub fn sound_speed(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> f64 {
     let a = (a_index * prim.0 / prim.1).sqrt();
     a
@@ -96,7 +101,10 @@ pub fn sound_speed(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64)
 /// Input:
 ///     prim: the eight component array of the primitive variables
 /// Output:
+///     ca: the Alfven speed of the gas
 /// Description:
+///     This function takes the primitive variable to calculate the Alfven
+///     speed of the gas using this equation: ca = |B_x| / sqrt(rho).
 pub fn alfven_speed(prim: (f64, f64, f64, f64, f64, f64, f64, f64)) -> f64 {
     let ca = prim.5.abs() / (prim.1).sqrt();
     ca
@@ -104,8 +112,13 @@ pub fn alfven_speed(prim: (f64, f64, f64, f64, f64, f64, f64, f64)) -> f64 {
 
 /// Input:
 ///     prim: the eight component array of the primitive variables
+///     a index: the adiabatic index
 /// Output:
+///     cf: the fast magnetosonic speed
 /// Description:
+///     This function takes the primitive variable to calculate the fast 
+///     magnetosonic speed using this equation: 
+///     cf = sqrt(gamma * P + B^2 + sqrt((gamma * P + B^2)^2 - 4 * gamma * P * B_x^2) / (2 * rho))
 pub fn fast_magsonic_speed(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> f64 {
     let b_squared = prim.5 * prim.5 + prim.6 * prim.6 + prim.7 * prim.7;
     let cf = ((a_index * prim.0 + b_squared + ((a_index * prim.0 + b_squared) * (a_index * prim.0 + b_squared) - 4.0 * a_index * prim.0 * prim.5 * prim.5).sqrt()) / (2.0 * prim.1)).sqrt();
@@ -114,8 +127,13 @@ pub fn fast_magsonic_speed(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_ind
 
 /// Input:
 ///     prim: the eight component array of the primitive variables
+///     a index: the adiabatic index
 /// Output:
+///     cs: the slow magnetosonic speed
 /// Description:
+///     This function takes the primitive variable to calculate the slow 
+///     magnetosonic speed using this equation: 
+///     cf = sqrt(gamma * P + B^2 - sqrt((gamma * P + B^2)^2 - 4 * gamma * P * B_x^2) / (2 * rho))
 pub fn slow_magsonic_speed(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> f64 {
     let b_squared = prim.5 * prim.5 + prim.6 * prim.6 + prim.7 * prim.7;
     let cs = ((a_index * prim.0 + b_squared - ((a_index * prim.0 + b_squared) * (a_index * prim.0 + b_squared) - 4.0 * a_index * prim.0 * prim.5 * prim.5).sqrt()) / (2.0 * prim.1)).sqrt();
@@ -124,20 +142,30 @@ pub fn slow_magsonic_speed(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_ind
 
 /// Input:
 ///     prim: the eight component array of the primitive variables
+///     a index: the adiabatic index
 /// Output:
+///     max: this is the max eigen value
 /// Description:
+///     This function uses the fast magneto sonic speed function. It uses
+///     this function and the primitive variables and adiabatic index. It 
+///     uses the equation: max = vx + cf.
 pub fn max_eigen(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> f64 {
-    let cf = fast_magsonic_speed(prim.clone(), a_index);
+    let cf = fast_magsonic_speed(prim, a_index);
     let max = prim.2 + cf;
     max
 }
 
 /// Input:
 ///     prim: the eight component array of the primitive variables
+///     a index: the adiabatic index
 /// Output:
+///     min: this is the min eigen value
 /// Description:
+///     This function uses the fast magneto sonic speed function. It uses
+///     this function and the primitive variables and adiabatic index. It 
+///     uses the equation: min = vx - cf.
 pub fn min_eigen(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> f64 {
-    let cf = fast_magsonic_speed(prim.clone(), a_index);
+    let cf = fast_magsonic_speed(prim, a_index);
     let min = prim.2 - cf;
     min
 }
@@ -162,8 +190,12 @@ pub fn tuple_max(tup: (f64, f64, f64)) -> f64 {
 }
 
 /// Input:
+///     tup: A tuple that contains three elements of type f64.
 /// Output:
+///     The minimum value of the elements in the tuple, a float.
 /// Description:
+///     This function uses the tuple max function to determine the max element of the tuple. It then
+///     converts the tuple to an array and iterates over the array to find the minimum value.
 pub fn tuple_min(tup: (f64, f64, f64)) -> f64 {
     let arr = [tup.0, tup.1, tup.2];
     let mut min_check = tuple_max(tup);
@@ -176,14 +208,19 @@ pub fn tuple_min(tup: (f64, f64, f64)) -> f64 {
 }
 
 /// Input:
+///     prim l: the primitive variables of the left cell
+///     prim r: the primitive variables of the right cell
+///     a index: the adiabatic index
+///     dx: the size of a cell
 /// Output:
+///     dt: the timestep
 /// Description:
 pub fn compute_time_step(prim_l: (f64, f64, f64, f64, f64, f64, f64, f64), prim_r: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64, dx: f64) -> f64 {
-        let plus_l = max_eigen(prim_l.clone(), a_index);
-        let minus_l = min_eigen(prim_l.clone(), a_index);
+        let plus_l = max_eigen(prim_l, a_index);
+        let minus_l = min_eigen(prim_l, a_index);
     
-        let plus_r = max_eigen(prim_r.clone(), a_index);
-        let minus_r = min_eigen(prim_r.clone(), a_index);
+        let plus_r = max_eigen(prim_r, a_index);
+        let minus_r = min_eigen(prim_r, a_index);
     
         let a_plus = tuple_max((0.0, plus_l, plus_r));
         let a_minus = tuple_max((0.0, -minus_l, -minus_r));
@@ -247,17 +284,17 @@ pub fn right_reconstruction(c_min: f64, c_mid: f64, c_max: f64) -> f64 {
     cr
 }
 
-/// Input:
-/// Output:
-/// Description:
-pub fn vector_index(vec: Vec<u8>, desired_val: u8) -> Vec<u8> {
-    let mut count: u8 = 0;
-    let mut index_vec = Vec::new();
-    for i in vec {
-        if i == desired_val{
-            index_vec.push(count);
-        }
-        count += 1;
-    }
-    index_vec
-}
+// Input:
+// Output:
+// Description:
+//pub fn vector_index(vec: Vec<u8>, desired_val: u8) -> Vec<u8> {
+//    let mut count: u8 = 0;
+//    let mut index_vec = Vec::new();
+//    for i in vec {
+//        if i == desired_val{
+//            index_vec.push(count);
+//        }
+//        count += 1;
+//    }
+//    index_vec
+//}
