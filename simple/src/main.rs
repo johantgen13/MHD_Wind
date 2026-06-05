@@ -1,27 +1,43 @@
 // This is a simple non-relativisetic 1D MHD code.
 //
 // Author: Brayden JoHantgen
-// Last Update: 6/2/2026
+// Last Update: 6/4/2026
 
-use std::fs;
+//use std::fs;
 //use std::str;
-use std::io::{BufWriter, Write};
-use std::path::Path;
-use std::time::Instant;
+//use std::io::{BufWriter, Write, BufRead, BufReader, Read};
+//use std::path::Path;
+//use std::time::Instant;
+//use std::collections::HashMap;
 
 pub mod math_func;
 
-/////////////////////
-// Useful Variables
-/////////////////////
-const CELL_NUM: f64 = 10000.0;
-const DISCON: f64 = 0.5;
-const ADIABATIC: f64 = 2.0;
-const DR: f64 = 1.0 / CELL_NUM;
-const T_FINAL: f64 = 1.26;
-const CHECK_INTERVAL: f64 = 0.025;
-const CFL: f64 = 0.8;
-const BX: f64 = 0.75;
+////////////
+// Structs
+////////////
+struct Physics {
+    adiabatic_index: f64,
+    p: (f64, f64),
+    rho: (f64, f64),
+    vx: (f64, f64),
+    vy: (f64, f64),
+    vz: (f64, f64),
+    bx: (f64, f64),
+    by: (f64, f64),
+    bz: (f64, f64),
+}
+
+struct Driver {
+    cfl: f64,
+    tfinal: f64,
+    checkpoint: f64,
+    num_zones: usize,
+    discontinuity: f64,
+
+    dimensionality: String,
+    solving_scheme: String,
+    grid_type: String,
+}
 
 ////////////////////
 // Usage Functions
@@ -30,337 +46,494 @@ const BX: f64 = 0.75;
 // Input:
 // Output:
 // Description:
-//fn read_config(file_path: String) -> Vec<u8> {
+//fn read_config(file_path: String) -> Result<(), Box<dyn std::error::Error>> { //Physics, Driver {
 //    let input_file_path = Path::new(&file_path);
-//    let data_bytes = fs::read(input_file_path);
-//    let byte_vec = data_bytes.expect("Something went wrong!");
-//    let index_vec = math_func::vector_index(byte_vec, 10);
-//    index_vec
-    //for i in byte_vec {
-    //    println!("{:?}", i);
-    //}
+//    let file = fs::read_to_string(input_file_path).map_err(|e| e.to_string())?;
+    
+//    for l in file.lines() {
+//        let line = l.trim();
+//    }
+
+//    if line.is_empty() {
+//        continue;
+//    }
+
+//    let parts: Vec<_> = line.split_whitespace().collect();
+//    println!("{:?}", parts);
+//    Ok(())   
 //}
 
 /// Input:
 /// Output:
 /// Description:
-fn init_prim() -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
-    let mut init_primitive = Vec::new();
-    for i in 0..((CELL_NUM + 2.0) as u64) {
-        if i < ((CELL_NUM * DISCON + 1.0) as u64) {
-            init_primitive.push((1.0, 1.0, 0.0, 0.0, 0.0, BX, 1.0, 0.0));
+//fn init_prim(phys: &Physics, drive: &Driver) -> [f64; (CELL_NUM+2)] {
+//    let mut init_primitive: [f64; CELL_NUM+2] = [0.0; CELL_NUM+2];
+//    for i in 0..(CELL_NUM+2) {
+//        if i < (((CELL_NUM as f64) * DISCON + 1.0) as usize) {
+//            init_primitive[i] = (1.0, 1.0, 0.0, 0.0, 0.0, BX, 1.0, 0.0);
+//        } else {
+//            init_primitive[i] = (0.1, 0.125, 0.0, 0.0, 0.0, BX, -1.0, 0.0);
+//        }
+//    }
+//    init_primitive
+//}
+
+/// Input:
+/// Output:
+/// Description:
+//fn cons_vec_from_prim(prims: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
+//    let mut cons_vec = Vec::new();
+//    for i in 0..((CELL_NUM+2.0) as u64) {
+//        let index: usize = (i).try_into().unwrap();
+//        cons_vec.push(math_func::prim_to_cons(prims[index], a_index));
+//    }
+//    cons_vec
+//}
+
+/// Input:
+/// Output:
+/// Description:
+//fn prim_vec_from_cons(cons: Vec<(f64, f64, f64, f64, f64, f64, f64)>, a_index: f64, bx: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
+//    let mut prims_vec = Vec::new();
+//    for i in 0..((CELL_NUM+2.0) as u64) {
+//        let index: usize = (i).try_into().unwrap();
+//        prims_vec.push(math_func::cons_to_prim(cons[index], a_index, bx));
+//    }
+//    prims_vec
+//}
+
+/// Input:
+/// Output:
+/// Description:
+//fn hll_flux(prim_1: (f64, f64, f64, f64, f64, f64, f64, f64), prim_2: (f64, f64, f64, f64, f64, f64, f64, f64), prim_3: (f64, f64, f64, f64, f64, f64, f64, f64), prim_4: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> (f64, f64, f64, f64, f64, f64, f64) {
+//    let p_l = math_func::left_reconstruction(prim_1.0, prim_2.0, prim_3.0);
+//    let rho_l = math_func::left_reconstruction(prim_1.1, prim_2.1, prim_3.1);
+//    let vx_l = math_func::left_reconstruction(prim_1.2, prim_2.2, prim_3.2);
+//    let vy_l = math_func::left_reconstruction(prim_1.3, prim_2.3, prim_3.3);
+//    let vz_l = math_func::left_reconstruction(prim_1.4, prim_2.4, prim_3.4);
+//    let bx_l = prim_2.5;
+//    let by_l = math_func::left_reconstruction(prim_1.6, prim_2.6, prim_3.6);
+//    let bz_l = math_func::left_reconstruction(prim_1.7, prim_2.7, prim_3.7);
+
+//    let p_r = math_func::right_reconstruction(prim_2.0, prim_3.0, prim_4.0);
+//    let rho_r = math_func::right_reconstruction(prim_2.1, prim_3.1, prim_4.1);
+//    let vx_r = math_func::right_reconstruction(prim_2.2, prim_3.2, prim_4.2);
+//    let vy_r = math_func::right_reconstruction(prim_2.3, prim_3.3, prim_4.3);
+//    let vz_r = math_func::right_reconstruction(prim_2.4, prim_3.4, prim_4.4);
+//    let bx_r = prim_3.5;
+//    let by_r = math_func::right_reconstruction(prim_2.6, prim_3.6, prim_4.6);
+//    let bz_r = math_func::right_reconstruction(prim_2.7, prim_3.7, prim_4.7);
+
+//    let prim_l = (p_l, rho_l, vx_l, vy_l, vz_l, bx_l, by_l, bz_l);
+//    let prim_r = (p_r, rho_r, vx_r, vy_r, vz_r, bx_r, by_r, bz_r);
+
+//    let plus_l = math_func::max_eigen(prim_l.clone(), a_index);
+//    let minus_l = math_func::min_eigen(prim_l.clone(), a_index);
+//    let u_l = math_func::prim_to_cons(prim_l.clone(), a_index);
+//    let f_l = math_func::flux(prim_l.clone(), a_index);
+
+//    let plus_r = math_func::max_eigen(prim_r.clone(), a_index);
+//    let minus_r = math_func::min_eigen(prim_r.clone(), a_index);
+//    let u_r = math_func::prim_to_cons(prim_r.clone(), a_index);
+//    let f_r = math_func::flux(prim_r.clone(), a_index);
+
+//    let a_plus = math_func::tuple_max((0.0, plus_l, plus_r));
+//    let a_minus = math_func::tuple_max((0.0, -minus_l, -minus_r));
+
+//    let hll_0 = ((a_plus * f_l.0) + (a_minus * f_r.0) - (a_plus * a_minus * (u_r.0 - u_l.0))) / (a_minus + a_plus);
+//    let hll_1 = ((a_plus * f_l.1) + (a_minus * f_r.1) - (a_plus * a_minus * (u_r.1 - u_l.1))) / (a_minus + a_plus);
+//    let hll_2 = ((a_plus * f_l.2) + (a_minus * f_r.2) - (a_plus * a_minus * (u_r.2 - u_l.2))) / (a_minus + a_plus);
+//    let hll_3 = ((a_plus * f_l.3) + (a_minus * f_r.3) - (a_plus * a_minus * (u_r.3 - u_l.3))) / (a_minus + a_plus);
+//    let hll_4 = ((a_plus * f_l.4) + (a_minus * f_r.4) - (a_plus * a_minus * (u_r.4 - u_l.4))) / (a_minus + a_plus);
+//    let hll_5 = ((a_plus * f_l.5) + (a_minus * f_r.5) - (a_plus * a_minus * (u_r.5 - u_l.5))) / (a_minus + a_plus);
+//    let hll_6 = ((a_plus * f_l.6) + (a_minus * f_r.6) - (a_plus * a_minus * (u_r.6 - u_l.6))) / (a_minus + a_plus);
+//    let hll = (hll_0, hll_1, hll_2, hll_3, hll_4, hll_5, hll_6);
+//    hll
+//}
+
+/// Input:
+/// Output:
+/// Description:
+//fn godonov(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
+//    let mut go_vec = Vec::new();
+//    go_vec.push(hll_flux(prims_vec[0], prims_vec[1], prims_vec[2], prims_vec[3], a_index));
+//    for i in 1..((CELL_NUM-0.0) as u64) {
+//        let index_1: usize = (i-1).try_into().unwrap();
+//        let index_2: usize = (i).try_into().unwrap();
+//        let index_3: usize = (i+1).try_into().unwrap();
+//        let index_4: usize = (i+2).try_into().unwrap();
+//        let go_fill = hll_flux(prims_vec[index_1], prims_vec[index_2], prims_vec[index_3], prims_vec[index_4], a_index);
+//        go_vec.push(go_fill);
+//    }
+//    let index_a: usize = ((CELL_NUM - 2.0) as u64).try_into().unwrap();
+//    let index_b: usize = ((CELL_NUM - 1.0) as u64).try_into().unwrap();
+//    let index_c: usize = ((CELL_NUM) as u64).try_into().unwrap();
+//    let index_d: usize = ((CELL_NUM + 1.0) as u64).try_into().unwrap();
+//    go_vec.push(hll_flux(prims_vec[index_a], prims_vec[index_b], prims_vec[index_c], prims_vec[index_d], a_index));
+//    go_vec
+//}
+
+/// Input:
+/// Output:
+/// Description:
+//fn l_function(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: Vec<(f64, f64, f64, f64, f64, f64, f64)>) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
+//    let go_vec = godonov(prims_vec, ADIABATIC);
+//    let mut new_cons_vec = Vec::new();
+//    new_cons_vec.push(cons_vec[0]);
+//    for i in 1..((CELL_NUM + 1.0) as u64) {
+//        let index_1: usize = (i).try_into().unwrap();
+//        let index_2: usize = (i-1).try_into().unwrap();
+//        let new_0 = - (go_vec[index_1].0 - go_vec[index_2].0) / DR;
+//        let new_1 = - (go_vec[index_1].1 - go_vec[index_2].1) / DR;
+//        let new_2 = - (go_vec[index_1].2 - go_vec[index_2].2) / DR;
+//        let new_3 = - (go_vec[index_1].3 - go_vec[index_2].3) / DR;
+//        let new_4 = - (go_vec[index_1].4 - go_vec[index_2].4) / DR;
+//        let new_5 = - (go_vec[index_1].5 - go_vec[index_2].5) / DR;
+//        let new_6 = - (go_vec[index_1].6 - go_vec[index_2].6) / DR;
+//        let new_fill = (new_0, new_1, new_2, new_3, new_4, new_5, new_6);
+//        new_cons_vec.push(new_fill);
+//    }
+//    let a = (CELL_NUM + 1.0) as u64;
+//    let index_a: usize = (a).try_into().unwrap();
+//    new_cons_vec.push(cons_vec[index_a]);
+//    new_cons_vec
+//}
+
+/// Input:
+/// Output:
+/// Description:
+//fn rk4_step(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: Vec<(f64, f64, f64, f64, f64, f64, f64)>, dt: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
+//    let l_cons = l_function(prims_vec.clone(), cons_vec.clone());
+//    let mut cons_1 = Vec::new();
+//    cons_1.push(cons_vec[0]);
+//    for i in 1..((CELL_NUM + 1.0) as u64) {
+//        let index_a: usize = (i).try_into().unwrap();
+//        let fill_0 = cons_vec[index_a].0 + dt * l_cons[index_a].0;
+//        let fill_1 = cons_vec[index_a].1 + dt * l_cons[index_a].1;
+//        let fill_2 = cons_vec[index_a].2 + dt * l_cons[index_a].2;
+//        let fill_3 = cons_vec[index_a].3 + dt * l_cons[index_a].3;
+//        let fill_4 = cons_vec[index_a].4 + dt * l_cons[index_a].4;
+//        let fill_5 = cons_vec[index_a].5 + dt * l_cons[index_a].5;
+//        let fill_6 = cons_vec[index_a].6 + dt * l_cons[index_a].6;
+//        let fill = (fill_0, fill_1, fill_2, fill_3, fill_4, fill_5, fill_6);
+//        cons_1.push(fill);
+//    }
+//    let b = (CELL_NUM + 1.0) as u64;
+//    let index_b: usize = (b).try_into().unwrap();
+//    cons_1.push(cons_vec[index_b]);
+
+//    let prims_1 = prim_vec_from_cons(cons_1.clone(), ADIABATIC, BX);
+//    let l_cons_1 = l_function(prims_1.clone(), cons_1.clone());
+//    let mut cons_2 = Vec::new();
+//    cons_2.push(cons_vec[0]);
+//    for i in 1..((CELL_NUM + 1.0) as u64) {
+//        let index_c: usize = (i).try_into().unwrap();
+//        let fill_0 = 0.75 * cons_vec[index_c].0 + 0.25 * cons_1[index_c].0 + 0.25 * dt * l_cons_1[index_c].0;
+//        let fill_1 = 0.75 * cons_vec[index_c].1 + 0.25 * cons_1[index_c].1 + 0.25 * dt * l_cons_1[index_c].1;
+//        let fill_2 = 0.75 * cons_vec[index_c].2 + 0.25 * cons_1[index_c].2 + 0.25 * dt * l_cons_1[index_c].2;
+//        let fill_3 = 0.75 * cons_vec[index_c].3 + 0.25 * cons_1[index_c].3 + 0.25 * dt * l_cons_1[index_c].3;
+//        let fill_4 = 0.75 * cons_vec[index_c].4 + 0.25 * cons_1[index_c].4 + 0.25 * dt * l_cons_1[index_c].4;
+//        let fill_5 = 0.75 * cons_vec[index_c].5 + 0.25 * cons_1[index_c].5 + 0.25 * dt * l_cons_1[index_c].5;
+//        let fill_6 = 0.75 * cons_vec[index_c].6 + 0.25 * cons_1[index_c].6 + 0.25 * dt * l_cons_1[index_c].6;
+//        let fill = (fill_0, fill_1, fill_2, fill_3, fill_4, fill_5, fill_6);
+//        cons_2.push(fill);
+//    }
+//    cons_2.push(cons_vec[index_b]);
+
+//    let prims_2 = prim_vec_from_cons(cons_1.clone(), ADIABATIC, BX);
+//    let l_cons_2 = l_function(prims_2.clone(), cons_2.clone());
+//    let mut new_cons = Vec::new();
+//    new_cons.push(cons_vec[0]);
+//    for i in 1..((CELL_NUM + 1.0) as u64) {
+//        let index_d: usize = (i).try_into().unwrap();
+//        let fill_0 = 0.33 * cons_vec[index_d].0 + 0.67 * cons_2[index_d].0 + 0.67 * dt * l_cons_2[index_d].0;
+//        let fill_1 = 0.33 * cons_vec[index_d].1 + 0.67 * cons_2[index_d].1 + 0.67 * dt * l_cons_2[index_d].1;
+//        let fill_2 = 0.33 * cons_vec[index_d].2 + 0.67 * cons_2[index_d].2 + 0.67 * dt * l_cons_2[index_d].2;
+//        let fill_3 = 0.33 * cons_vec[index_d].3 + 0.67 * cons_2[index_d].3 + 0.67 * dt * l_cons_2[index_d].3;
+//        let fill_4 = 0.33 * cons_vec[index_d].4 + 0.67 * cons_2[index_d].4 + 0.67 * dt * l_cons_2[index_d].4;
+//        let fill_5 = 0.33 * cons_vec[index_d].5 + 0.67 * cons_2[index_d].5 + 0.67 * dt * l_cons_2[index_d].5;
+//        let fill_6 = 0.33 * cons_vec[index_d].6 + 0.67 * cons_2[index_d].6 + 0.67 * dt * l_cons_2[index_d].6;
+//        let fill = (fill_0, fill_1, fill_2, fill_3, fill_4, fill_5, fill_6);
+//        new_cons.push(fill);
+//    }
+//    new_cons.push(cons_vec[index_b]);
+//    new_cons
+//}
+
+/// Input:
+/// Output:
+/// Description:
+//fn write_checkpoint(prims: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, t: f64, check_count: i8) -> Result<(), Box<dyn std::error::Error>> {
+//    let file_num = check_count.to_string();
+//    let file_type = ".txt".to_string();
+//    let file_name = format!("{}{}", file_num, file_type);
+//    let file_path = "time_step_files/".to_string() + &file_name;
+//    let output_file_path = Path::new(&file_path);
+
+//    let t_fill = format!("{} {}", "t:".to_string(), &(t.to_string()+&" ".to_string()));
+
+//    let num_fill = format!("{} {}", "cell_num:".to_string(), &(CELL_NUM.to_string()+&" ".to_string()));
+
+//    let mut p_string = "p: ".to_string();
+//    let mut rho_string = "rho: ".to_string();
+//    let mut vx_string = "vx: ".to_string();
+//    let mut vy_string = "vy: ".to_string();
+//    let mut vz_string = "vz: ".to_string();
+//    let mut bx_string = "Bx: ".to_string();
+//    let mut by_string = "By: ".to_string();
+//    let mut bz_string = "Bz: ".to_string();
+
+//    let mut prims_fill = Vec::new();
+//    for i in 1..((CELL_NUM+1.0) as u64) {
+//        let index: usize = (i).try_into().unwrap();
+//        prims_fill.push(prims[index]);
+//    }
+
+//    for i in prims_fill {
+//        let p_fill = i.0.to_string() + &" ".to_string();
+//        p_string.push_str(&p_fill);
+
+//        let rho_fill = i.1.to_string() + &" ".to_string();
+//        rho_string.push_str(&rho_fill);
+
+//        let vx_fill = i.2.to_string() + &" ".to_string();
+//        vx_string.push_str(&vx_fill);
+
+//        let vy_fill = i.3.to_string() + &" ".to_string();
+//        vy_string.push_str(&vy_fill);
+
+//        let vz_fill = i.4.to_string() + &" ".to_string();
+//        vz_string.push_str(&vz_fill);
+
+//        let bx_fill = i.5.to_string() + &" ".to_string();
+//        bx_string.push_str(&bx_fill);
+
+//        let by_fill = i.6.to_string() + &" ".to_string();
+//        by_string.push_str(&by_fill);
+
+//        let bz_fill = i.7.to_string() + &" ".to_string();
+//        bz_string.push_str(&bz_fill);
+//    }
+ 
+//    let file = fs::OpenOptions::new()
+//        .append(true)
+//        .create(true)
+//        .open(output_file_path)?;
+
+//    let mut writer = BufWriter::new(file);
+
+//    writeln!(writer, "{}", num_fill)?;
+//    writeln!(writer, "{}", t_fill)?;
+//    writeln!(writer, "{}", p_string)?;
+//    writeln!(writer, "{}", rho_string)?;
+//    writeln!(writer, "{}", vx_string)?;
+//    writeln!(writer, "{}", vy_string)?;
+//    writeln!(writer, "{}", vz_string)?;
+//    writeln!(writer, "{}", bx_string)?;
+//    writeln!(writer, "{}", by_string)?;
+//    writeln!(writer, "{}", bz_string)?;
+//    writer.flush()?;
+
+//    Ok(())
+//}
+
+
+
+
+/// Input:
+/// Output:
+/// Description:
+fn init_prims(phys: &Physics, discon: f64) -> [(f64, f64, f64, f64, f64, f64, f64, f64); CELL_NUM] {
+    let mut init_primitive: [(f64, f64, f64, f64, f64, f64, f64, f64); CELL_NUM] = [(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0); CELL_NUM];
+    for i in 0..CELL_NUM {
+        if i < (((CELL_NUM as f64) * discon) as usize) {
+            init_primitive[i] = (phys.p.0, phys.rho.0, phys.vx.0, phys.vy.0, phys.vz.0, phys.bx.0, phys.by.0, phys.bz.0);
         } else {
-            init_primitive.push((0.1, 0.125, 0.0, 0.0, 0.0, BX, -1.0, 0.0));
+            init_primitive[i] = (phys.p.1, phys.rho.1, phys.vx.1, phys.vy.1, phys.vz.1, phys.bx.1, phys.by.1, phys.bz.1);
         }
     }
     init_primitive
-}
-
-/// Input:
-/// Output:
-/// Description:
-fn cons_vec_from_prim(prims: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
-    let mut cons_vec = Vec::new();
-    for i in 0..((CELL_NUM+2.0) as u64) {
-        let index: usize = (i).try_into().unwrap();
-        cons_vec.push(math_func::prim_to_cons(prims[index], a_index));
-    }
-    cons_vec
-}
-
-/// Input:
-/// Output:
-/// Description:
-fn prim_vec_from_cons(cons: Vec<(f64, f64, f64, f64, f64, f64, f64)>, a_index: f64, bx: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
-    let mut prims_vec = Vec::new();
-    for i in 0..((CELL_NUM+2.0) as u64) {
-        let index: usize = (i).try_into().unwrap();
-        prims_vec.push(math_func::cons_to_prim(cons[index], a_index, bx));
-    }
-    prims_vec
-}
-
-/// Input:
-/// Output:
-/// Description:
-fn hll_flux(prim_1: (f64, f64, f64, f64, f64, f64, f64, f64), prim_2: (f64, f64, f64, f64, f64, f64, f64, f64), prim_3: (f64, f64, f64, f64, f64, f64, f64, f64), prim_4: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> (f64, f64, f64, f64, f64, f64, f64) {
-    let p_l = math_func::left_reconstruction(prim_1.0, prim_2.0, prim_3.0);
-    let rho_l = math_func::left_reconstruction(prim_1.1, prim_2.1, prim_3.1);
-    let vx_l = math_func::left_reconstruction(prim_1.2, prim_2.2, prim_3.2);
-    let vy_l = math_func::left_reconstruction(prim_1.3, prim_2.3, prim_3.3);
-    let vz_l = math_func::left_reconstruction(prim_1.4, prim_2.4, prim_3.4);
-    let bx_l = prim_2.5;
-    let by_l = math_func::left_reconstruction(prim_1.6, prim_2.6, prim_3.6);
-    let bz_l = math_func::left_reconstruction(prim_1.7, prim_2.7, prim_3.7);
-
-    let p_r = math_func::right_reconstruction(prim_2.0, prim_3.0, prim_4.0);
-    let rho_r = math_func::right_reconstruction(prim_2.1, prim_3.1, prim_4.1);
-    let vx_r = math_func::right_reconstruction(prim_2.2, prim_3.2, prim_4.2);
-    let vy_r = math_func::right_reconstruction(prim_2.3, prim_3.3, prim_4.3);
-    let vz_r = math_func::right_reconstruction(prim_2.4, prim_3.4, prim_4.4);
-    let bx_r = prim_3.5;
-    let by_r = math_func::right_reconstruction(prim_2.6, prim_3.6, prim_4.6);
-    let bz_r = math_func::right_reconstruction(prim_2.7, prim_3.7, prim_4.7);
-
-    let prim_l = (p_l, rho_l, vx_l, vy_l, vz_l, bx_l, by_l, bz_l);
-    let prim_r = (p_r, rho_r, vx_r, vy_r, vz_r, bx_r, by_r, bz_r);
-
-    let plus_l = math_func::max_eigen(prim_l.clone(), a_index);
-    let minus_l = math_func::min_eigen(prim_l.clone(), a_index);
-    let u_l = math_func::prim_to_cons(prim_l.clone(), a_index);
-    let f_l = math_func::flux(prim_l.clone(), a_index);
-
-    let plus_r = math_func::max_eigen(prim_r.clone(), a_index);
-    let minus_r = math_func::min_eigen(prim_r.clone(), a_index);
-    let u_r = math_func::prim_to_cons(prim_r.clone(), a_index);
-    let f_r = math_func::flux(prim_r.clone(), a_index);
-
-    let a_plus = math_func::tuple_max((0.0, plus_l, plus_r));
-    let a_minus = math_func::tuple_max((0.0, -minus_l, -minus_r));
-
-    let hll_0 = ((a_plus * f_l.0) + (a_minus * f_r.0) - (a_plus * a_minus * (u_r.0 - u_l.0))) / (a_minus + a_plus);
-    let hll_1 = ((a_plus * f_l.1) + (a_minus * f_r.1) - (a_plus * a_minus * (u_r.1 - u_l.1))) / (a_minus + a_plus);
-    let hll_2 = ((a_plus * f_l.2) + (a_minus * f_r.2) - (a_plus * a_minus * (u_r.2 - u_l.2))) / (a_minus + a_plus);
-    let hll_3 = ((a_plus * f_l.3) + (a_minus * f_r.3) - (a_plus * a_minus * (u_r.3 - u_l.3))) / (a_minus + a_plus);
-    let hll_4 = ((a_plus * f_l.4) + (a_minus * f_r.4) - (a_plus * a_minus * (u_r.4 - u_l.4))) / (a_minus + a_plus);
-    let hll_5 = ((a_plus * f_l.5) + (a_minus * f_r.5) - (a_plus * a_minus * (u_r.5 - u_l.5))) / (a_minus + a_plus);
-    let hll_6 = ((a_plus * f_l.6) + (a_minus * f_r.6) - (a_plus * a_minus * (u_r.6 - u_l.6))) / (a_minus + a_plus);
-    let hll = (hll_0, hll_1, hll_2, hll_3, hll_4, hll_5, hll_6);
-    hll
-}
-
-/// Input:
-/// Output:
-/// Description:
-fn godonov(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
-    let mut go_vec = Vec::new();
-    go_vec.push(hll_flux(prims_vec[0], prims_vec[1], prims_vec[2], prims_vec[3], a_index));
-    for i in 1..((CELL_NUM-0.0) as u64) {
-        let index_1: usize = (i-1).try_into().unwrap();
-        let index_2: usize = (i).try_into().unwrap();
-        let index_3: usize = (i+1).try_into().unwrap();
-        let index_4: usize = (i+2).try_into().unwrap();
-        let go_fill = hll_flux(prims_vec[index_1], prims_vec[index_2], prims_vec[index_3], prims_vec[index_4], a_index);
-        go_vec.push(go_fill);
-    }
-    let index_a: usize = ((CELL_NUM - 2.0) as u64).try_into().unwrap();
-    let index_b: usize = ((CELL_NUM - 1.0) as u64).try_into().unwrap();
-    let index_c: usize = ((CELL_NUM) as u64).try_into().unwrap();
-    let index_d: usize = ((CELL_NUM + 1.0) as u64).try_into().unwrap();
-    go_vec.push(hll_flux(prims_vec[index_a], prims_vec[index_b], prims_vec[index_c], prims_vec[index_d], a_index));
-    go_vec
-}
-
-/// Input:
-/// Output:
-/// Description:
-fn l_function(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: Vec<(f64, f64, f64, f64, f64, f64, f64)>) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
-    let go_vec = godonov(prims_vec, ADIABATIC);
-    let mut new_cons_vec = Vec::new();
-    new_cons_vec.push(cons_vec[0]);
-    for i in 1..((CELL_NUM + 1.0) as u64) {
-        let index_1: usize = (i).try_into().unwrap();
-        let index_2: usize = (i-1).try_into().unwrap();
-        let new_0 = - (go_vec[index_1].0 - go_vec[index_2].0) / DR;
-        let new_1 = - (go_vec[index_1].1 - go_vec[index_2].1) / DR;
-        let new_2 = - (go_vec[index_1].2 - go_vec[index_2].2) / DR;
-        let new_3 = - (go_vec[index_1].3 - go_vec[index_2].3) / DR;
-        let new_4 = - (go_vec[index_1].4 - go_vec[index_2].4) / DR;
-        let new_5 = - (go_vec[index_1].5 - go_vec[index_2].5) / DR;
-        let new_6 = - (go_vec[index_1].6 - go_vec[index_2].6) / DR;
-        let new_fill = (new_0, new_1, new_2, new_3, new_4, new_5, new_6);
-        new_cons_vec.push(new_fill);
-    }
-    let a = (CELL_NUM + 1.0) as u64;
-    let index_a: usize = (a).try_into().unwrap();
-    new_cons_vec.push(cons_vec[index_a]);
-    new_cons_vec
-}
-
-/// Input:
-/// Output:
-/// Description:
-fn rk4_step(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: Vec<(f64, f64, f64, f64, f64, f64, f64)>, dt: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
-    let l_cons = l_function(prims_vec.clone(), cons_vec.clone());
-    let mut cons_1 = Vec::new();
-    cons_1.push(cons_vec[0]);
-    for i in 1..((CELL_NUM + 1.0) as u64) {
-        let index_a: usize = (i).try_into().unwrap();
-        let fill_0 = cons_vec[index_a].0 + dt * l_cons[index_a].0;
-        let fill_1 = cons_vec[index_a].1 + dt * l_cons[index_a].1;
-        let fill_2 = cons_vec[index_a].2 + dt * l_cons[index_a].2;
-        let fill_3 = cons_vec[index_a].3 + dt * l_cons[index_a].3;
-        let fill_4 = cons_vec[index_a].4 + dt * l_cons[index_a].4;
-        let fill_5 = cons_vec[index_a].5 + dt * l_cons[index_a].5;
-        let fill_6 = cons_vec[index_a].6 + dt * l_cons[index_a].6;
-        let fill = (fill_0, fill_1, fill_2, fill_3, fill_4, fill_5, fill_6);
-        cons_1.push(fill);
-    }
-    let b = (CELL_NUM + 1.0) as u64;
-    let index_b: usize = (b).try_into().unwrap();
-    cons_1.push(cons_vec[index_b]);
-
-    let prims_1 = prim_vec_from_cons(cons_1.clone(), ADIABATIC, BX);
-    let l_cons_1 = l_function(prims_1.clone(), cons_1.clone());
-    let mut cons_2 = Vec::new();
-    cons_2.push(cons_vec[0]);
-    for i in 1..((CELL_NUM + 1.0) as u64) {
-        let index_c: usize = (i).try_into().unwrap();
-        let fill_0 = 0.75 * cons_vec[index_c].0 + 0.25 * cons_1[index_c].0 + 0.25 * dt * l_cons_1[index_c].0;
-        let fill_1 = 0.75 * cons_vec[index_c].1 + 0.25 * cons_1[index_c].1 + 0.25 * dt * l_cons_1[index_c].1;
-        let fill_2 = 0.75 * cons_vec[index_c].2 + 0.25 * cons_1[index_c].2 + 0.25 * dt * l_cons_1[index_c].2;
-        let fill_3 = 0.75 * cons_vec[index_c].3 + 0.25 * cons_1[index_c].3 + 0.25 * dt * l_cons_1[index_c].3;
-        let fill_4 = 0.75 * cons_vec[index_c].4 + 0.25 * cons_1[index_c].4 + 0.25 * dt * l_cons_1[index_c].4;
-        let fill_5 = 0.75 * cons_vec[index_c].5 + 0.25 * cons_1[index_c].5 + 0.25 * dt * l_cons_1[index_c].5;
-        let fill_6 = 0.75 * cons_vec[index_c].6 + 0.25 * cons_1[index_c].6 + 0.25 * dt * l_cons_1[index_c].6;
-        let fill = (fill_0, fill_1, fill_2, fill_3, fill_4, fill_5, fill_6);
-        cons_2.push(fill);
-    }
-    cons_2.push(cons_vec[index_b]);
-
-    let prims_2 = prim_vec_from_cons(cons_1.clone(), ADIABATIC, BX);
-    let l_cons_2 = l_function(prims_2.clone(), cons_2.clone());
-    let mut new_cons = Vec::new();
-    new_cons.push(cons_vec[0]);
-    for i in 1..((CELL_NUM + 1.0) as u64) {
-        let index_d: usize = (i).try_into().unwrap();
-        let fill_0 = 0.33 * cons_vec[index_d].0 + 0.67 * cons_2[index_d].0 + 0.67 * dt * l_cons_2[index_d].0;
-        let fill_1 = 0.33 * cons_vec[index_d].1 + 0.67 * cons_2[index_d].1 + 0.67 * dt * l_cons_2[index_d].1;
-        let fill_2 = 0.33 * cons_vec[index_d].2 + 0.67 * cons_2[index_d].2 + 0.67 * dt * l_cons_2[index_d].2;
-        let fill_3 = 0.33 * cons_vec[index_d].3 + 0.67 * cons_2[index_d].3 + 0.67 * dt * l_cons_2[index_d].3;
-        let fill_4 = 0.33 * cons_vec[index_d].4 + 0.67 * cons_2[index_d].4 + 0.67 * dt * l_cons_2[index_d].4;
-        let fill_5 = 0.33 * cons_vec[index_d].5 + 0.67 * cons_2[index_d].5 + 0.67 * dt * l_cons_2[index_d].5;
-        let fill_6 = 0.33 * cons_vec[index_d].6 + 0.67 * cons_2[index_d].6 + 0.67 * dt * l_cons_2[index_d].6;
-        let fill = (fill_0, fill_1, fill_2, fill_3, fill_4, fill_5, fill_6);
-        new_cons.push(fill);
-    }
-    new_cons.push(cons_vec[index_b]);
-    new_cons
-}
-
-/// Input:
-/// Output:
-/// Description:
-fn write_checkpoint(prims: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, t: f64, check_count: i8) -> Result<(), Box<dyn std::error::Error>> {
-    let file_num = check_count.to_string();
-    let file_type = ".txt".to_string();
-    let file_name = format!("{}{}", file_num, file_type);
-    let file_path = "time_step_files/".to_string() + &file_name;
-    let output_file_path = Path::new(&file_path);
-
-    let t_fill = format!("{} {}", "t:".to_string(), &(t.to_string()+&" ".to_string()));
-
-    let num_fill = format!("{} {}", "cell_num:".to_string(), &(CELL_NUM.to_string()+&" ".to_string()));
-
-    let mut p_string = "p: ".to_string();
-    let mut rho_string = "rho: ".to_string();
-    let mut vx_string = "vx: ".to_string();
-    let mut vy_string = "vy: ".to_string();
-    let mut vz_string = "vz: ".to_string();
-    let mut bx_string = "Bx: ".to_string();
-    let mut by_string = "By: ".to_string();
-    let mut bz_string = "Bz: ".to_string();
-
-    let mut prims_fill = Vec::new();
-    for i in 1..((CELL_NUM+1.0) as u64) {
-        let index: usize = (i).try_into().unwrap();
-        prims_fill.push(prims[index]);
-    }
-
-    for i in prims_fill {
-        let p_fill = i.0.to_string() + &" ".to_string();
-        p_string.push_str(&p_fill);
-
-        let rho_fill = i.1.to_string() + &" ".to_string();
-        rho_string.push_str(&rho_fill);
-
-        let vx_fill = i.2.to_string() + &" ".to_string();
-        vx_string.push_str(&vx_fill);
-
-        let vy_fill = i.3.to_string() + &" ".to_string();
-        vy_string.push_str(&vy_fill);
-
-        let vz_fill = i.4.to_string() + &" ".to_string();
-        vz_string.push_str(&vz_fill);
-
-        let bx_fill = i.5.to_string() + &" ".to_string();
-        bx_string.push_str(&bx_fill);
-
-        let by_fill = i.6.to_string() + &" ".to_string();
-        by_string.push_str(&by_fill);
-
-        let bz_fill = i.7.to_string() + &" ".to_string();
-        bz_string.push_str(&bz_fill);
-    }
- 
-    let file = fs::OpenOptions::new()
-        .append(true)
-        .create(true)
-        .open(output_file_path)?;
-
-    let mut writer = BufWriter::new(file);
-
-    writeln!(writer, "{}", num_fill)?;
-    writeln!(writer, "{}", t_fill)?;
-    writeln!(writer, "{}", p_string)?;
-    writeln!(writer, "{}", rho_string)?;
-    writeln!(writer, "{}", vx_string)?;
-    writeln!(writer, "{}", vy_string)?;
-    writeln!(writer, "{}", vz_string)?;
-    writeln!(writer, "{}", bx_string)?;
-    writeln!(writer, "{}", by_string)?;
-    writeln!(writer, "{}", bz_string)?;
-    writer.flush()?;
-
-    Ok(())
 }
 
 ///////////////
 // Simulation
 ///////////////
 fn main() {
-    let before = Instant::now();
+    //let before = Instant::now();
 
     //let path = "/Users/toogan13/Desktop/MHD_Wind/magneto_config.txt";
-    //let bytes = read_config(path.to_string());
-    //println!("{:?}", bytes);
+    //let config = read_config(path.to_string());
+    //println!("{:?}", config);
 
-    let mut t: f64 = 0.0;
-    let mut t_checkpoint = CHECK_INTERVAL;
-    let mut time_step_count: f64 = 0.0;
-    let mut check_count: i8 = 0;
+    let phys = Physics{adiabatic_index: 2.0, p: (1.0, 0.1), rho: (1.0, 0.125), vx: (0.0, 0.0), vy: (0.0, 0.0), vz: (0.0, 0.0), bx: (0.75, 0.75), by: (1.0, -1.0), bz: (0.0, 0.0)};
+    let drive = Driver{cfl: 0.8, tfinal: 0.401, checkpoint: 0.0125, num_zones: 10, discontinuity: 0.5, dimensionality: "1D".to_string(), solving_scheme: "First Order".to_string(), grid_type: "Cartesian".to_string()};
 
-    let initial_primitives = init_prim();
-    let mut conserved_vec = cons_vec_from_prim(initial_primitives.clone(), ADIABATIC);
+    const CELL_NUM = drive.num_zones;
 
-    while t < T_FINAL {
-        let primitives = prim_vec_from_cons(conserved_vec.clone(), ADIABATIC, BX);
-        let conserve = cons_vec_from_prim(primitives.clone(), ADIABATIC);
+    //println!("{:?}", &phys.p);
+
+    //let mut t: f64 = 0.0;
+    //let mut t_checkpoint = CHECK_INTERVAL;
+    //let mut time_step_count: f64 = 0.0;
+    //let mut check_count: i8 = 0;
+
+    let initial_primitives = init_prims(&phys, drive.discontinuity);
+    //let mut conserved_vec = cons_vec_from_prim(initial_primitives.clone(), ADIABATIC);
+    println!("{:?}", initial_primitives);
+
+    //while t < T_FINAL {
+    //    let primitives = prim_vec_from_cons(conserved_vec.clone(), ADIABATIC, BX);
+    //    let conserve = cons_vec_from_prim(primitives.clone(), ADIABATIC);
         
-        let mut dt = 1.0;
-        for i in 0..((CELL_NUM - 1.0) as u64) {
-            let index_1: usize = (i).try_into().unwrap();
-            let index_2: usize = (i+1).try_into().unwrap();
-            let dt_check = math_func::compute_time_step(primitives[index_1], primitives[index_2], ADIABATIC, DR);
-            if dt_check < dt {
-                dt = dt_check; 
-                }
-            }
-        dt = CFL * dt;
+    //    let mut dt = 1.0;
+    //    for i in 0..((CELL_NUM - 1.0) as u64) {
+    //        let index_1: usize = (i).try_into().unwrap();
+    //        let index_2: usize = (i+1).try_into().unwrap();
+    //        let dt_check = math_func::compute_time_step(primitives[index_1], primitives[index_2], ADIABATIC, DR);
+    //        if dt_check < dt {
+    //            dt = dt_check; 
+    //            }
+    //        }
+    //    dt = CFL * dt;
         
-        conserved_vec = rk4_step(primitives.clone(), conserve, dt);
+    //    conserved_vec = rk4_step(primitives.clone(), conserve, dt);
 
-        if t >= t_checkpoint {
-            let _ = write_checkpoint(primitives.clone(), t, check_count);
-            t_checkpoint += CHECK_INTERVAL;
-            check_count += 1;
-            }
-        t += dt;
-        time_step_count += 1.0;
-    }
-    let runtime = (before.elapsed().as_millis() as f64) / 1000.0;
-    let performance = (time_step_count * CELL_NUM) / runtime;
-    println!("The number of timesteps: {:?}", time_step_count);
-    println!("The runtime in seconds: {:?}", runtime);
-    println!("The performance in zones per second: {:.2?}", performance);
+    //    if t >= t_checkpoint {
+    //        let _ = write_checkpoint(primitives.clone(), t, check_count);
+    //        t_checkpoint += CHECK_INTERVAL;
+    //        check_count += 1;
+    //        }
+    //    t += dt;
+    //    time_step_count += 1.0;
+    //}
+    //let runtime = (before.elapsed().as_millis() as f64) / 1000.0;
+    //let performance = (time_step_count * CELL_NUM) / runtime;
+    //println!("The number of timesteps: {:?}", time_step_count);
+    //println!("The runtime in seconds: {:?}", runtime);
+    //println!("The performance in zones per second: {:.2?}", performance);
 }
+
+//use std::fs;
+//use std::str::FromStr;
+
+//#[derive(Debug)]
+//struct Config {
+//    adiabatic_index: f64,
+
+//    pressure: (f64, f64),
+//    density: (f64, f64),
+
+//    velocity_x: (f64, f64),
+//    velocity_y: (f64, f64),
+//    velocity_z: (f64, f64),
+
+//    magnetic_x: (f64, f64),
+//   magnetic_y: (f64, f64),
+//    magnetic_z: (f64, f64),
+
+//    cfl: f64,
+//    tfinal: f64,
+//    checkpoint: f64,
+
+//    cell_number: usize,
+//    discontinuity: f64,
+//    discontinuity_number: usize,
+
+//    dimension: String,
+//    coordinates: String,
+//    scheme: String,
+//}
+
+//fn parse_pair<T: FromStr>(parts: &[&str]) -> Result<(T, T), String> {
+//    if parts.len() != 3 {
+//        return Err("expected two values".into());
+//    }
+
+//    let a = parts[1]
+//        .parse()
+//        .map_err(|_| "failed to parse first value")?;
+//    let b = parts[2]
+//        .parse()
+//        .map_err(|_| "failed to parse second value")?;
+
+//    Ok((a, b))
+//}
+
+//fn load_config(path: &str) -> Result<Config, String> {
+//    let contents = fs::read_to_string(path).map_err(|e| e.to_string())?;
+
+//    let mut cfg = Config {
+//        adiabatic_index: 0.0,
+
+//        pressure: (0.0, 0.0),
+//        density: (0.0, 0.0),
+
+//        velocity_x: (0.0, 0.0),
+//        velocity_y: (0.0, 0.0),
+//        velocity_z: (0.0, 0.0),
+
+//        magnetic_x: (0.0, 0.0),
+//        magnetic_y: (0.0, 0.0),
+//        magnetic_z: (0.0, 0.0),
+
+//        cfl: 0.0,
+//        tfinal: 0.0,
+//        checkpoint: 0.0,
+
+//        cell_number: 0,
+//        discontinuity: 0.0,
+//        discontinuity_number: 0,
+
+//        dimension: String::new(),
+//        coordinates: String::new(),
+//        scheme: String::new(),
+//    };
+
+//    for line in contents.lines() {
+//        let line = line.trim();
+
+//        if line.is_empty() {
+//            continue;
+//        }
+
+//        let parts: Vec<_> = line.split_whitespace().collect();
+
+//        match parts[0] {
+//            "Adiabatic_Index" => {
+//                cfg.adiabatic_index = parts[1].parse().unwrap();
+//            }
+//            "Pressure" => cfg.pressure = parse_pair(&parts)?,
+//            "Density" => cfg.density = parse_pair(&parts)?,
+//            "Velocity_x" => cfg.velocity_x = parse_pair(&parts)?,
+//            "Velocity_y" => cfg.velocity_y = parse_pair(&parts)?,
+//            "Velocity_z" => cfg.velocity_z = parse_pair(&parts)?,
+//            "Magnetic_x" => cfg.magnetic_x = parse_pair(&parts)?,
+//            "Magnetic_y" => cfg.magnetic_y = parse_pair(&parts)?,
+//            "Magnetic_z" => cfg.magnetic_z = parse_pair(&parts)?,
+
+//            "CFL" => cfg.cfl = parts[1].parse().unwrap(),
+//            "Tfinal" => cfg.tfinal = parts[1].parse().unwrap(),
+//            "Checkpoint" => cfg.checkpoint = parts[1].parse().unwrap(),
+
+//            "Cell_Number" => cfg.cell_number = parts[1].parse().unwrap(),
+//            "Discontinuity" => cfg.discontinuity = parts[1].parse().unwrap(),
+//            "Discontinuity_Number" => {
+//                cfg.discontinuity_number = parts[1].parse().unwrap();
+//            }
+
+//            "Dimension" => cfg.dimension = parts[1].to_string(),
+//            "Coordinates" => cfg.coordinates = parts[1].to_string(),
+//            "Scheme" => cfg.scheme = parts[1].to_string(),
+
+//            _ => return Err(format!("unknown keyword: {}", parts[0])),
+//        }
+//    }
+
+//    Ok(cfg)
+//}
+
+//fn main() -> Result<(), String> {
+//    let cfg = load_config("input.txt")?;
+//    println!("{:#?}", cfg);
+//    Ok(())
+//}

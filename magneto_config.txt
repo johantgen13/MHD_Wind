@@ -1,15 +1,19 @@
-cfl: 0.2
-tfinal: 0.401
-checkpoint_interval: 0.0125
-num_zones: 10
-discontinuity_num: 1
-discontinuity: 0.5
-a_index: 1.4
-p: 1.0, 0.125
-rho: 1.0, 0.1
-v_x: 0.0, 0.0
-v_y: 0.0, 0.0
-v_z: 0.0, 0.0
-B_x: 0.5, 0.5
-B_y: 1.0, -1.0
-B_z: 0.0, 0.0
+Adiabatic_Index   2.0
+Pressure          1.0    0.1
+Density           1.0    0.125
+Velocity_x        0.0    0.0
+Velocity_y        0.0    0.0
+Velocity_z        0.0    0.0
+Magnetic_x        0.75   0.75
+Magnetic_y        1.0    -1.0
+Magnetic_z        0.0    0.0
+
+CFL                     0.8
+Tfinal                  0.401
+Checkpoint              0.0125
+Cell_Number             800
+Discontinuity           0.5
+
+Dimension      1D
+Coordinates    Cartesian
+Scheme         First_Order

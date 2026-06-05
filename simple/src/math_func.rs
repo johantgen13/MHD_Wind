@@ -1,7 +1,7 @@
 // This file is full of functions to supplement the simple 1D mhd code.
 //
 // Author: Brayden JoHantgen
-// Last Update: 6/2/2026
+// Last Update: 6/4/2026
 
 /// Input:
 ///     prim: the eight component array of the primitive variables
@@ -284,17 +284,25 @@ pub fn right_reconstruction(c_min: f64, c_mid: f64, c_max: f64) -> f64 {
     cr
 }
 
+/// Input:
+/// Output:
+/// Description:
+pub fn radius(x:f64, y:f64, z:f64) -> f64 {
+    let r = (x * x + y * y + z * z).sqrt();
+    r
+}
+
 // Input:
 // Output:
 // Description:
-//pub fn vector_index(vec: Vec<u8>, desired_val: u8) -> Vec<u8> {
-//    let mut count: u8 = 0;
-//    let mut index_vec = Vec::new();
-//    for i in vec {
-//        if i == desired_val{
-//            index_vec.push(count);
-//        }
-//        count += 1;
-//    }
-//    index_vec
-//}
+pub fn vector_index(vec: &Vec<u8>, desired_val: u8) -> Vec<u16> {
+    let mut count: u16 = 0;
+    let mut index_vec = Vec::new();
+    for i in vec {
+        if *i == desired_val{
+            index_vec.push(count);
+        }
+        count += 1;
+    }
+    index_vec
+}
