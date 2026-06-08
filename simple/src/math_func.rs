@@ -1,7 +1,7 @@
 // This file is full of functions to supplement the simple 1D mhd code.
 //
 // Author: Brayden JoHantgen
-// Last Update: 6/4/2026
+// Last Update: 6/7/2026
 
 /// Input:
 ///     prim: the eight component array of the primitive variables
@@ -22,7 +22,7 @@ pub fn total_pressure(prim: (f64, f64, f64, f64, f64, f64, f64, f64)) -> f64 {
 ///     E: the total energy
 /// Description:
 ///     This function takes the primitive variable and solves for the total
-///     energy using this equation: E = 0.5 * rho * v^2 + P/(rho * (gamma - 1)) + 0.5 * B^2.
+///     energy using this equation: E = 0.5 * rho * v^2 + P/(gamma - 1) + 0.5 * B^2.
 pub fn total_energy(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> f64 {
     let e = 0.5 * prim.1 * (prim.2 * prim.2 + prim.3 * prim.3 + prim.4 * prim.4) + prim.0 / (a_index - 1.0) + 0.5 * (prim.5 * prim.5 + prim.6 * prim.6 + prim.7 * prim.7);
     e
@@ -32,19 +32,19 @@ pub fn total_energy(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64
 ///     prim: the eight component array of the primitive variables
 ///     a index: the adiabatic index
 /// Output:
-///     con: the seven component array of the conserved variables
+///     con: the eight component array of the conserved variables
 /// Description:
 ///     This function constructs the conserved variable from the primitive variable.
 ///     The conserved variable has the components rho, rho * vx, rho * vy, rho * vz,
 ///     By, Bz, and E. This function uses the total energy function.
-pub fn prim_to_cons(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> (f64, f64, f64, f64, f64, f64, f64) {
+pub fn prim_to_cons(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> (f64, f64, f64, f64, f64, f64, f64, f64) {
     let e = total_energy(prim.clone(), a_index);
-    let con = (prim.1, prim.1 * prim.2, prim.1 * prim.3, prim.1 * prim.4, prim.6, prim.7, e);
+    let con = (prim.1, prim.1 * prim.2, prim.1 * prim.3, prim.1 * prim.4, prim.5, prim.6, prim.7, e);
     con
 }
 
 /// Input:
-///     con: the seven component array of the conserved variables
+///     con: the eight component array of the conserved variables
 ///     a index: the adiabatic index
 ///     bx: the x component of the magnetic field
 /// Output:
@@ -53,12 +53,12 @@ pub fn prim_to_cons(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64
 ///     This function reconstructs the primirive variable from the conserved variable.
 ///     This function solves for the components of velocity and the pressure. The x
 ///     component of the magnetic field is held constant.
-pub fn cons_to_prim(con: (f64, f64, f64, f64, f64, f64, f64), a_index: f64, bx: f64) -> (f64, f64, f64, f64, f64, f64, f64, f64) {
+pub fn cons_to_prim(con: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> (f64, f64, f64, f64, f64, f64, f64, f64) {
     let vx = con.1 / con.0;
     let vy = con.2 / con.0;
     let vz = con.3 / con.0;
-    let p = (a_index - 1.0) * (con.6 - 0.5 * (con.0 * (vx * vx + vy * vy + vz * vz) + (con.4 * con.4 + con.5 * con.5 + bx * bx)));
-    let prim = (p, con.0, vx, vy, vz, bx, con.4, con.5);
+    let p = (a_index - 1.0) * (con.7 - 0.5 * (con.0 * (vx * vx + vy * vy + vz * vz) + (con.4 * con.4 + con.5 * con.5 + con.6 * con.6)));
+    let prim = (p, con.0, vx, vy, vz, con.4, con.5, con.6);
     prim
 }
 
@@ -66,23 +66,46 @@ pub fn cons_to_prim(con: (f64, f64, f64, f64, f64, f64, f64), a_index: f64, bx: 
 ///     prim: the eight component array of the primitive variables
 ///     a index: the adiabatic index
 /// Output:
-///     flux: the flux
+///     flux: the flux in the x-direction
 /// Description:
-///     This function takes the primitive variable to construct the flux.
+///     This function takes the primitive variable to construct the flux in the x-direction.
 ///     This function uses the total pressure and total energy functions.
-pub fn flux(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> (f64, f64, f64, f64, f64, f64, f64) {
-    let p = total_pressure(prim.clone());
-    let e = total_energy(prim.clone(), a_index);
+pub fn flux_x(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> (f64, f64, f64, f64, f64, f64, f64, f64) {
+    let p = total_pressure(prim);
+    let e = total_energy(prim, a_index);
     let f0 = prim.1 * prim.2;
     let f1 = prim.1 * prim.2 * prim.2 + p - prim.5 * prim.5;
     let f2 = prim.1 * prim.2 * prim.3 - prim.5 * prim.6;
     let f3 = prim.1 * prim.2 * prim.4 - prim.5 * prim.7;
-    let f4 = prim.6 * prim.2 - prim.5 * prim.3;
-    let f5 = prim.7 * prim.2 - prim.5 * prim.4;
-    let f6 = (e + p) * prim.2 - prim.5 * (prim.2 * prim.5 + prim.3 * prim.6 + prim.4 * prim.7);
-    let f_arr = (f0, f1, f2, f3, f4, f5, f6);
-    f_arr
+    let f4 = 0.0;
+    let f5 = prim.6 * prim.2 - prim.5 * prim.3;
+    let f6 = prim.7 * prim.2 - prim.5 * prim.4;
+    let f7 = (e + p) * prim.2 - prim.5 * (prim.2 * prim.5 + prim.3 * prim.6 + prim.4 * prim.7);
+    let f_x = (f0, f1, f2, f3, f4, f5, f6, f7);
+    f_x
 }
+
+/// Input:
+/// Output:
+/// Description:
+pub fn flux_y(prim:(f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> (f64, f64, f64, f64, f64, f64, f64, f64) {
+    let p = total_pressure(prim);
+    let e = total_energy(prim, a_index);
+    let f0 = prim.1 * prim.3;
+    let f1 = prim.1 * prim.2 * prim.3 - prim.5 * prim.6;
+    let f2 = prim.1 * prim.3 * prim.3 + p - prim.6 * prim.6;
+    let f3 = prim.1 * prim.3 * prim.4 - prim.6 * prim.7;
+    let f4 = prim.5 * prim.3 - prim.6 * prim.2;
+    let f5 = 0.0;
+    let f6 = prim.7 * prim.3 - prim.6 * prim.4;
+    let f7 = (e + p) * prim.3 - prim.6 * (prim.2 * prim.5 + prim.3 * prim.6 + prim.4 * prim.7);
+    let f_y = (f0, f1, f2, f3, f4, f5, f6, f7);
+    f_y
+}
+
+
+
+
 
 /// Input:
 ///     prim: the eight component array of the primitive variables
@@ -295,14 +318,14 @@ pub fn radius(x:f64, y:f64, z:f64) -> f64 {
 // Input:
 // Output:
 // Description:
-pub fn vector_index(vec: &Vec<u8>, desired_val: u8) -> Vec<u16> {
-    let mut count: u16 = 0;
-    let mut index_vec = Vec::new();
-    for i in vec {
-        if *i == desired_val{
-            index_vec.push(count);
-        }
-        count += 1;
-    }
-    index_vec
-}
+//pub fn vector_index(vec: &Vec<u8>, desired_val: u8) -> Vec<u16> {
+//    let mut count: u16 = 0;
+//    let mut index_vec = Vec::new();
+//    for i in vec {
+//        if *i == desired_val{
+//            index_vec.push(count);
+//        }
+//        count += 1;
+//    }
+//    index_vec
+//}
