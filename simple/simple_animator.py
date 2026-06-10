@@ -125,7 +125,7 @@ A = ax.imshow(np.zeros((512, 512)), cmap='plasma', interpolation='nearest',
 animation = FuncAnimation(fig=fig, 
                     func=animate_2d, 
                     frames=file_num,
-                    interval=50,
+                    interval=100,
                     repeat=False,
                     )
 

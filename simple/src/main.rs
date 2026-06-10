@@ -85,10 +85,10 @@ fn init_prims_1d(phys: &Physics, zones: usize, discon: f64) -> Vec<(f64, f64, f6
 /// Description:
 fn init_prims_2d(phys: &Physics, drive: &Driver) -> Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>> {
     let mut init_primitive: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>> = Vec::new();
+    let mut rng = rand::thread_rng();
     for i in 0..drive.num_zones_x {
         let mut prim_fill: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> = Vec::new();
         for j in 0..drive.num_zones_y {
-            let mut rng = rand::thread_rng();
             let num1: f64 = rng.gen_range(0.0..0.01);
             let num2: f64 = rng.gen_range(0.0..0.01);
             if j < (((drive.num_zones_y as f64) * drive.discontinuity) as usize) {
@@ -309,7 +309,7 @@ fn euler_timestep_2d(prims_vec: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)
 /// Input:
 /// Output:
 /// Description:
-fn write_checkpoint_2d(prims: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>>, x_zone: usize, y_zone: usize, t: f64, check_count: i8) -> Result<(), Box<dyn std::error::Error>> {
+fn write_checkpoint_2d(prims: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>>, x_zone: usize, y_zone: usize, t: f64, check_count: i64) -> Result<(), Box<dyn std::error::Error>> {
     let file_num = check_count.to_string();
     let file_type = ".txt".to_string();
     let file_name = format!("{}{}", file_num, file_type);
@@ -391,7 +391,7 @@ fn write_checkpoint_2d(prims: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>>
 ///////////////
 fn main() {
     let phys = Physics{adiabatic_index: 1.4, p: (2.5, 2.5), rho: (2.0, 1.0), vx: (0.5, -0.5), vy: (0.0, 0.0), vz: (0.0, 0.0), bx: (1.772, 1.772), by: (0.0, 0.0), bz: (0.0, 0.0)};
-    let drive = Driver{cfl: 0.4, tfinal: 5.001, checkpoint: 0.0125, num_zones_x: 512, num_zones_y: 512, discontinuity: 0.25, dimensionality: "2D".to_string(), plm: false, grid_type: "Cartesian".to_string()};
+    let drive = Driver{cfl: 0.1, tfinal: 5.001, checkpoint: 0.0125, num_zones_x: 512, num_zones_y: 512, discontinuity: 0.25, dimensionality: "2D".to_string(), plm: false, grid_type: "Cartesian".to_string()};
 
     let before = Instant::now();
 
@@ -402,7 +402,7 @@ fn main() {
     let mut t: f64 = 0.0;
     let mut t_checkpoint = drive.checkpoint;
     let mut time_step_count: f64 = 0.0;
-    let mut check_count: i8 = 0;
+    let mut check_count: i64 = 0;
 
     let initial_primitives = init_prims_2d(&phys, &drive);
     let mut conserved_vec = cons_vec_from_prim_2d(initial_primitives.clone(), drive.num_zones_x, drive.num_zones_y, phys.adiabatic_index);
@@ -414,9 +414,12 @@ fn main() {
         let mut dt = 1.0;
         for i in 0..(drive.num_zones_x-1) {
             for j in 0..(drive.num_zones_y-1) {
-                let dt_check = math_func::compute_time_step(primitives[i][j], primitives[i+1][j], phys.adiabatic_index, 1.0 / (drive.num_zones_x as f64));
-                if dt_check < dt {
-                    dt = dt_check; 
+                let dt_check1 = math_func::compute_time_step(primitives[i][j], primitives[i+1][j], phys.adiabatic_index, 1.0 / (drive.num_zones_x as f64));
+                let dt_check2 = math_func::compute_time_step(primitives[i][j], primitives[i][j+1], phys.adiabatic_index, 1.0 / (drive.num_zones_y as f64));
+                if dt_check1 < dt_check2 {
+                    dt = dt_check1; 
+                    } else {
+                        dt = dt_check2;
                     }
                 }
             }
