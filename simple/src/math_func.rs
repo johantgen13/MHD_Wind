@@ -10,6 +10,7 @@
 /// Description:
 ///     This function takes the primitive variable and solves for the 
 ///     total pressure using this equation: P = P_gas + 0.5 * B^2.
+#[inline(always)]
 pub fn total_pressure(prim: (f64, f64, f64, f64, f64, f64, f64, f64)) -> f64 {
     let p = prim.0 + 0.5 * (prim.5 * prim.5 + prim.6 * prim.6 + prim.7 * prim.7);
     p
@@ -23,6 +24,7 @@ pub fn total_pressure(prim: (f64, f64, f64, f64, f64, f64, f64, f64)) -> f64 {
 /// Description:
 ///     This function takes the primitive variable and solves for the total
 ///     energy using this equation: E = 0.5 * rho * v^2 + P/(gamma - 1) + 0.5 * B^2.
+#[inline(always)]
 pub fn total_energy(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> f64 {
     let e = 0.5 * prim.1 * (prim.2 * prim.2 + prim.3 * prim.3 + prim.4 * prim.4) + prim.0 / (a_index - 1.0) + 0.5 * (prim.5 * prim.5 + prim.6 * prim.6 + prim.7 * prim.7);
     e
@@ -103,10 +105,6 @@ pub fn flux_y(prim:(f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> (f
     f_y
 }
 
-
-
-
-
 /// Input:
 ///     prim: the eight component array of the primitive variables
 ///     a index: the adiabatic index
@@ -115,7 +113,8 @@ pub fn flux_y(prim:(f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> (f
 /// Description:
 ///     This function uses the primitive variables and the adiabatic index
 ///     to calculate the sound speed of the gas with the following equation:
-///     cs = sqrt(gamma * P / rho). 
+///     cs = sqrt(gamma * P / rho).
+#[inline(always)] 
 pub fn sound_speed(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> f64 {
     let a = (a_index * prim.0 / prim.1).sqrt();
     a
@@ -142,6 +141,7 @@ pub fn alfven_speed(prim: (f64, f64, f64, f64, f64, f64, f64, f64)) -> f64 {
 ///     This function takes the primitive variable to calculate the fast 
 ///     magnetosonic speed using this equation: 
 ///     cf = sqrt(gamma * P + B^2 + sqrt((gamma * P + B^2)^2 - 4 * gamma * P * B_x^2) / (2 * rho))
+#[inline(always)]
 pub fn fast_magsonic_speed(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> f64 {
     let b_squared = prim.5 * prim.5 + prim.6 * prim.6 + prim.7 * prim.7;
     let cf = ((a_index * prim.0 + b_squared + ((a_index * prim.0 + b_squared) * (a_index * prim.0 + b_squared) - 4.0 * a_index * prim.0 * prim.5 * prim.5).sqrt()) / (2.0 * prim.1)).sqrt();
@@ -163,35 +163,6 @@ pub fn slow_magsonic_speed(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_ind
     cs
 }
 
-/// Input:
-///     prim: the eight component array of the primitive variables
-///     a index: the adiabatic index
-/// Output:
-///     max: this is the max eigen value
-/// Description:
-///     This function uses the fast magneto sonic speed function. It uses
-///     this function and the primitive variables and adiabatic index. It 
-///     uses the equation: max = vx + cf.
-pub fn max_eigen(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> f64 {
-    let cf = fast_magsonic_speed(prim.clone(), a_index);
-    let max = prim.2 + cf;
-    max
-}
-
-/// Input:
-///     prim: the eight component array of the primitive variables
-///     a index: the adiabatic index
-/// Output:
-///     min: this is the min eigen value
-/// Description:
-///     This function uses the fast magneto sonic speed function. It uses
-///     this function and the primitive variables and adiabatic index. It 
-///     uses the equation: min = vx - cf.
-pub fn min_eigen(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> f64 {
-    let cf = fast_magsonic_speed(prim.clone(), a_index);
-    let min = prim.2 - cf;
-    min
-}
 
 /// Input: 
 ///     tup: A tuple that contains three elements of type f64.
@@ -201,6 +172,7 @@ pub fn min_eigen(prim: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -
 ///     This function converts the tuple to an array and then iterates over the elements of the array. 
 ///     If an array/tuple element is larger than zero it is saved and compared to the rest of the 
 ///     elements. The largest element is returned. This function will fail if all elements are negative.
+#[inline(always)]
 pub fn tuple_max(tup: (f64, f64, f64)) -> f64 {
     let arr = [tup.0, tup.1, tup.2];
     let mut max_check: f64 = 0.0;
@@ -219,6 +191,7 @@ pub fn tuple_max(tup: (f64, f64, f64)) -> f64 {
 /// Description:
 ///     This function uses the tuple max function to determine the max element of the tuple. It then
 ///     converts the tuple to an array and iterates over the array to find the minimum value.
+#[inline(always)]
 pub fn tuple_min(tup: (f64, f64, f64)) -> f64 {
     let arr = [tup.0, tup.1, tup.2];
     let mut min_check = tuple_max(tup);
@@ -239,28 +212,53 @@ pub fn tuple_min(tup: (f64, f64, f64)) -> f64 {
 ///     dt: the timestep
 /// Description:
 pub fn compute_time_step(prim_l: (f64, f64, f64, f64, f64, f64, f64, f64), prim_r: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64, dx: f64) -> f64 {
-        let plus_l = max_eigen(prim_l.clone(), a_index);
-        let minus_l = min_eigen(prim_l.clone(), a_index);
+    let cf_l = fast_magsonic_speed(prim_l, a_index);    
+    let plus_x_l = cf_l + prim_l.2;
+    let plus_y_l = cf_l + prim_l.3; 
+    let minus_x_l = prim_l.2 - cf_l;
+    let minus_y_l = prim_l.3 - cf_l;
+
+    let cf_r = fast_magsonic_speed(prim_r, a_index);    
+    let plus_x_r = cf_r + prim_r.2;
+    let plus_y_r = cf_r + prim_r.3; 
+    let minus_x_r = prim_r.2 - cf_r;
+    let minus_y_r = prim_r.3 - cf_r;
     
-        let plus_r = max_eigen(prim_r.clone(), a_index);
-        let minus_r = min_eigen(prim_r.clone(), a_index);
+    let a_plus_l = tuple_max((0.0, plus_x_l, plus_y_l));
+    let a_minus_l = tuple_max((0.0, -minus_x_l, -minus_y_l));
     
-        let a_plus = tuple_max((0.0, plus_l, plus_r));
-        let a_minus = tuple_max((0.0, -minus_l, -minus_r));
-    
-        let mut dt: f64 = 0.0;
-    
-        if a_minus > a_plus {
-            dt += dx / a_minus;
-        } else {
-            dt += dx / a_plus;
-        }    
-        dt
+    let a_plus_r = tuple_max((0.0, plus_x_r, plus_y_r));
+    let a_minus_r = tuple_max((0.0, -minus_x_r, -minus_y_r));
+
+    let mut a_minus: f64 = 0.0;
+    let mut a_plus: f64 = 0.0;
+
+    if a_minus_l > a_minus_r {
+        a_minus = a_minus_l;
+    } else {
+        a_minus = a_minus_r;
     }
+
+    if a_plus_l > a_plus_r {
+        a_plus = a_plus_l;
+    } else {
+        a_plus = a_plus_r;
+    }
+
+    let mut dt: f64 = 0.0;
+    
+    if a_minus > a_plus {
+        dt += dx / a_minus;
+    } else {
+        dt += dx / a_plus;
+    }    
+    dt
+}
 
 /// Input:
 /// Output:
 /// Description:
+#[inline(always)]
 pub fn sgn(num: f64) -> f64 {
     let sign: f64;
     if num > 0.0 {
@@ -277,6 +275,7 @@ pub fn sgn(num: f64) -> f64 {
 /// Input:
 /// Output:
 /// Description:
+#[inline(always)]
 pub fn minmod(x: f64, y: f64, z: f64) -> f64 {
     let mm_1 = (sgn(x) + sgn(y)).abs();
     let mm_2 = sgn(x) + sgn(z);
@@ -288,6 +287,7 @@ pub fn minmod(x: f64, y: f64, z: f64) -> f64 {
 /// Input:
 /// Output:
 /// Description:
+#[inline(always)]
 pub fn left_reconstruction(c_min: f64, c_mid: f64, c_max: f64) -> f64 {
     let arg1 = 1.5 * (c_mid - c_min);
     let arg2 = 0.5 * (c_max - c_mid);
@@ -299,6 +299,7 @@ pub fn left_reconstruction(c_min: f64, c_mid: f64, c_max: f64) -> f64 {
 /// Input:
 /// Output:
 /// Description:
+#[inline(always)]
 pub fn right_reconstruction(c_min: f64, c_mid: f64, c_max: f64) -> f64 {
     let arg1 = 1.5 * (c_mid - c_min);
     let arg2 = 0.5 * (c_max - c_min);
@@ -306,26 +307,3 @@ pub fn right_reconstruction(c_min: f64, c_mid: f64, c_max: f64) -> f64 {
     let cr = c_mid - 0.5 * minmod(arg1, arg2, arg3);
     cr
 }
-
-/// Input:
-/// Output:
-/// Description:
-pub fn radius(x:f64, y:f64, z:f64) -> f64 {
-    let r = (x * x + y * y + z * z).sqrt();
-    r
-}
-
-// Input:
-// Output:
-// Description:
-//pub fn vector_index(vec: &Vec<u8>, desired_val: u8) -> Vec<u16> {
-//    let mut count: u16 = 0;
-//    let mut index_vec = Vec::new();
-//    for i in vec {
-//        if *i == desired_val{
-//            index_vec.push(count);
-//        }
-//        count += 1;
-//    }
-//    index_vec
-//}
