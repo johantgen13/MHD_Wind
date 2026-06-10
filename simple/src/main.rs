@@ -1,13 +1,14 @@
 // This is a simple non-relativisetic 1D MHD code.
 //
 // Author: Brayden JoHantgen
-// Last Update: 6/7/2026
+// Last Update: 6/9/2026
 
 use std::fs;
 //use std::str;
-use std::io::{BufWriter, Write, BufRead, BufReader, Read};
+use std::io::{BufWriter, Write};//, BufRead, BufReader, Read};
 use std::path::Path;
 use std::time::Instant;
+use rand::Rng;
 //use std::collections::HashMap;
 
 pub mod math_func;
@@ -67,23 +68,13 @@ struct Driver {
 /// Input:
 /// Output:
 /// Description:
-fn init_prims_1D(phys: &Physics, zones: usize, discon: f64, plm: bool) -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
+fn init_prims_1d(phys: &Physics, zones: usize, discon: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
     let mut init_primitive: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> = Vec::new();
-    if plm == false {
-        for i in 0..zones {
-            if i < (((zones as f64) * discon) as usize) {
-                init_primitive.push((phys.p.0, phys.rho.0, phys.vx.0, phys.vy.0, phys.vz.0, phys.bx.0, phys.by.0, phys.bz.0));
-            } else {
-                init_primitive.push((phys.p.1, phys.rho.1, phys.vx.1, phys.vy.1, phys.vz.1, phys.bx.1, phys.by.1, phys.bz.1));
-            }
-        }
-    } else {
-        for i in 0..(zones+2) {
-            if i < (((zones as f64) * discon + 1.0) as usize) {
-                init_primitive.push((phys.p.0, phys.rho.0, phys.vx.0, phys.vy.0, phys.vz.0, phys.bx.0, phys.by.0, phys.bz.0));
-            } else {
-                init_primitive.push((phys.p.1, phys.rho.1, phys.vx.1, phys.vy.1, phys.vz.1, phys.bx.1, phys.by.1, phys.bz.1));
-            }
+    for i in 0..zones {
+        if i < (((zones as f64) * discon) as usize) {
+            init_primitive.push((phys.p.0, phys.rho.0, phys.vx.0, phys.vy.0, phys.vz.0, phys.bx.0, phys.by.0, phys.bz.0));
+        } else {
+            init_primitive.push((phys.p.1, phys.rho.1, phys.vx.1, phys.vy.1, phys.vz.1, phys.bx.1, phys.by.1, phys.bz.1));
         }
     }
     init_primitive
@@ -92,7 +83,31 @@ fn init_prims_1D(phys: &Physics, zones: usize, discon: f64, plm: bool) -> Vec<(f
 /// Input:
 /// Output:
 /// Description:
-fn cons_vec_from_prim(prims: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
+fn init_prims_2d(phys: &Physics, drive: &Driver) -> Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>> {
+    let mut init_primitive: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>> = Vec::new();
+    for i in 0..drive.num_zones_x {
+        let mut prim_fill: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> = Vec::new();
+        for j in 0..drive.num_zones_y {
+            let mut rng = rand::thread_rng();
+            let num1: f64 = rng.gen_range(0.0..0.01);
+            let num2: f64 = rng.gen_range(0.0..0.01);
+            if j < (((drive.num_zones_y as f64) * drive.discontinuity) as usize) {
+                prim_fill.push((phys.p.1, phys.rho.1, phys.vx.1+num1, phys.vy.1+num2, phys.vz.1, phys.bx.1, phys.by.1, phys.bz.1));
+            } else if j > (((drive.num_zones_y as f64) * (1.0 - drive.discontinuity)) as usize) {
+                prim_fill.push((phys.p.1, phys.rho.1, phys.vx.1+num1, phys.vy.1+num2, phys.vz.1, phys.bx.1, phys.by.1, phys.bz.1));
+            } else {
+                prim_fill.push((phys.p.0, phys.rho.0, phys.vx.0+num1, phys.vy.0+num2, phys.vz.0, phys.bx.0, phys.by.0, phys.bz.0));
+            }
+        }
+        init_primitive.push(prim_fill);
+    }
+    init_primitive
+}
+
+/// Input:
+/// Output:
+/// Description:
+fn cons_vec_from_prim_1d(prims: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
     let mut cons_vec = Vec::new();
     for i in 0..(prims.len() as usize) {
         cons_vec.push(math_func::prim_to_cons(prims[i], a_index));
@@ -103,10 +118,40 @@ fn cons_vec_from_prim(prims: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_in
 /// Input:
 /// Output:
 /// Description:
-fn prim_vec_from_cons(cons: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
+fn cons_vec_from_prim_2d(prims: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>>, x_zone: usize, y_zone: usize, a_index: f64) -> Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>> {
+    let mut cons_vec: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>> = Vec::new();
+    for i in 0..x_zone {
+        let mut cons_fill: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> = Vec::new(); 
+        for j in 0..y_zone {
+            cons_fill.push(math_func::prim_to_cons(prims[i][j], a_index));
+        }
+        cons_vec.push(cons_fill);
+    }
+    cons_vec
+}
+
+/// Input:
+/// Output:
+/// Description:
+fn prim_vec_from_cons_1d(cons: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
     let mut prims_vec = Vec::new();
     for i in 0..(cons.len() as usize) {
         prims_vec.push(math_func::cons_to_prim(cons[i], a_index));
+    }
+    prims_vec
+}
+
+/// Input:
+/// Output:
+/// Description:
+fn prim_vec_from_cons_2d(cons: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>>, x_zone: usize, y_zone: usize, a_index: f64) -> Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>> {
+    let mut prims_vec: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>> = Vec::new();
+    for i in 0..x_zone {
+        let mut prim_fill: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> = Vec::new();
+        for j in 0..y_zone {
+            prim_fill.push(math_func::cons_to_prim(cons[i][j], a_index));
+        }
+        prims_vec.push(prim_fill);
     }
     prims_vec
 }
@@ -172,163 +217,67 @@ fn hll_flux_y(prim_l: (f64, f64, f64, f64, f64, f64, f64, f64), prim_r: (f64, f6
 /// Input:
 /// Output:
 /// Description:
-fn hll_flux_x_plm(prim_1: (f64, f64, f64, f64, f64, f64, f64, f64), prim_2: (f64, f64, f64, f64, f64, f64, f64, f64), prim_3: (f64, f64, f64, f64, f64, f64, f64, f64), prim_4: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> (f64, f64, f64, f64, f64, f64, f64, f64) {
-    let p_l = math_func::left_reconstruction(prim_1.0, prim_2.0, prim_3.0);
-    let rho_l = math_func::left_reconstruction(prim_1.1, prim_2.1, prim_3.1);
-    let vx_l = math_func::left_reconstruction(prim_1.2, prim_2.2, prim_3.2);
-    let vy_l = math_func::left_reconstruction(prim_1.3, prim_2.3, prim_3.3);
-    let vz_l = math_func::left_reconstruction(prim_1.4, prim_2.4, prim_3.4);
-    let bx_l = math_func::left_reconstruction(prim_1.5, prim_2.5, prim_3.5);
-    let by_l = math_func::left_reconstruction(prim_1.6, prim_2.6, prim_3.6);
-    let bz_l = math_func::left_reconstruction(prim_1.7, prim_2.7, prim_3.7);
-
-    let p_r = math_func::right_reconstruction(prim_2.0, prim_3.0, prim_4.0);
-    let rho_r = math_func::right_reconstruction(prim_2.1, prim_3.1, prim_4.1);
-    let vx_r = math_func::right_reconstruction(prim_2.2, prim_3.2, prim_4.2);
-    let vy_r = math_func::right_reconstruction(prim_2.3, prim_3.3, prim_4.3);
-    let vz_r = math_func::right_reconstruction(prim_2.4, prim_3.4, prim_4.4);
-    let bx_r = math_func::right_reconstruction(prim_2.5, prim_3.5, prim_4.5);
-    let by_r = math_func::right_reconstruction(prim_2.6, prim_3.6, prim_4.6);
-    let bz_r = math_func::right_reconstruction(prim_2.7, prim_3.7, prim_4.7);
-
-    let prim_l = (p_l, rho_l, vx_l, vy_l, vz_l, bx_l, by_l, bz_l);
-    let prim_r = (p_r, rho_r, vx_r, vy_r, vz_r, bx_r, by_r, bz_r);
-
-    let plus_l = math_func::max_eigen(prim_l.clone(), a_index);
-    let minus_l = math_func::min_eigen(prim_l.clone(), a_index);
-    let u_l = math_func::prim_to_cons(prim_l.clone(), a_index);
-    let f_l = math_func::flux_x(prim_l.clone(), a_index);
-
-    let plus_r = math_func::max_eigen(prim_r.clone(), a_index);
-    let minus_r = math_func::min_eigen(prim_r.clone(), a_index);
-    let u_r = math_func::prim_to_cons(prim_r.clone(), a_index);
-    let f_r = math_func::flux_x(prim_r.clone(), a_index);
-
-    let a_plus = math_func::tuple_max((0.0, plus_l, plus_r));
-    let a_minus = math_func::tuple_max((0.0, -minus_l, -minus_r));
-
-    let hll_0 = ((a_plus * f_l.0) + (a_minus * f_r.0) - (a_plus * a_minus * (u_r.0 - u_l.0))) / (a_minus + a_plus);
-    let hll_1 = ((a_plus * f_l.1) + (a_minus * f_r.1) - (a_plus * a_minus * (u_r.1 - u_l.1))) / (a_minus + a_plus);
-    let hll_2 = ((a_plus * f_l.2) + (a_minus * f_r.2) - (a_plus * a_minus * (u_r.2 - u_l.2))) / (a_minus + a_plus);
-    let hll_3 = ((a_plus * f_l.3) + (a_minus * f_r.3) - (a_plus * a_minus * (u_r.3 - u_l.3))) / (a_minus + a_plus);
-    let hll_4 = ((a_plus * f_l.4) + (a_minus * f_r.4) - (a_plus * a_minus * (u_r.4 - u_l.4))) / (a_minus + a_plus);
-    let hll_5 = ((a_plus * f_l.5) + (a_minus * f_r.5) - (a_plus * a_minus * (u_r.5 - u_l.5))) / (a_minus + a_plus);
-    let hll_6 = ((a_plus * f_l.6) + (a_minus * f_r.6) - (a_plus * a_minus * (u_r.6 - u_l.6))) / (a_minus + a_plus);
-    let hll_7 = ((a_plus * f_l.7) + (a_minus * f_r.7) - (a_plus * a_minus * (u_r.7 - u_l.7))) / (a_minus + a_plus);
-    let hll = (hll_0, hll_1, hll_2, hll_3, hll_4, hll_5, hll_6, hll_7);
-    hll
+fn godonov_x_2d(prims: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>>, x_zone: usize, y_zone: usize, a_index: f64) -> Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>> {
+    let mut go_vec: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>> = Vec::new();
+    let mut go: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> = Vec::new();
+    let mut count: usize = 0;
+    while count < y_zone {
+        go.push(hll_flux_x(prims[x_zone-1][count], prims[0][count], a_index));
+        count += 1;
+    }
+    go_vec.push(go.clone());
+    for i in 1..x_zone {
+        let mut go_fill: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> = Vec::new();
+        for j in 0..y_zone {
+            go_fill.push(hll_flux_x(prims[i-1][j], prims[i][j], a_index));
+        }
+        go_vec.push(go_fill);
+    }
+    go_vec.push(go);
+    go_vec
 }
 
 /// Input:
 /// Output:
 /// Description:
-fn hll_flux_y_plm(prim_1: (f64, f64, f64, f64, f64, f64, f64, f64), prim_2: (f64, f64, f64, f64, f64, f64, f64, f64), prim_3: (f64, f64, f64, f64, f64, f64, f64, f64), prim_4: (f64, f64, f64, f64, f64, f64, f64, f64), a_index: f64) -> (f64, f64, f64, f64, f64, f64, f64, f64) {
-    let p_l = math_func::left_reconstruction(prim_1.0, prim_2.0, prim_3.0);
-    let rho_l = math_func::left_reconstruction(prim_1.1, prim_2.1, prim_3.1);
-    let vx_l = math_func::left_reconstruction(prim_1.2, prim_2.2, prim_3.2);
-    let vy_l = math_func::left_reconstruction(prim_1.3, prim_2.3, prim_3.3);
-    let vz_l = math_func::left_reconstruction(prim_1.4, prim_2.4, prim_3.4);
-    let bx_l = math_func::left_reconstruction(prim_1.5, prim_2.5, prim_3.5);
-    let by_l = math_func::left_reconstruction(prim_1.6, prim_2.6, prim_3.6);
-    let bz_l = math_func::left_reconstruction(prim_1.7, prim_2.7, prim_3.7);
-
-    let p_r = math_func::right_reconstruction(prim_2.0, prim_3.0, prim_4.0);
-    let rho_r = math_func::right_reconstruction(prim_2.1, prim_3.1, prim_4.1);
-    let vx_r = math_func::right_reconstruction(prim_2.2, prim_3.2, prim_4.2);
-    let vy_r = math_func::right_reconstruction(prim_2.3, prim_3.3, prim_4.3);
-    let vz_r = math_func::right_reconstruction(prim_2.4, prim_3.4, prim_4.4);
-    let bx_r = math_func::right_reconstruction(prim_2.5, prim_3.5, prim_4.5);
-    let by_r = math_func::right_reconstruction(prim_2.6, prim_3.6, prim_4.6);
-    let bz_r = math_func::right_reconstruction(prim_2.7, prim_3.7, prim_4.7);
-
-    let prim_l = (p_l, rho_l, vx_l, vy_l, vz_l, bx_l, by_l, bz_l);
-    let prim_r = (p_r, rho_r, vx_r, vy_r, vz_r, bx_r, by_r, bz_r);
-
-    let plus_l = math_func::max_eigen(prim_l.clone(), a_index);
-    let minus_l = math_func::min_eigen(prim_l.clone(), a_index);
-    let u_l = math_func::prim_to_cons(prim_l.clone(), a_index);
-    let f_l = math_func::flux_y(prim_l.clone(), a_index);
-
-    let plus_r = math_func::max_eigen(prim_r.clone(), a_index);
-    let minus_r = math_func::min_eigen(prim_r.clone(), a_index);
-    let u_r = math_func::prim_to_cons(prim_r.clone(), a_index);
-    let f_r = math_func::flux_y(prim_r.clone(), a_index);
-
-    let a_plus = math_func::tuple_max((0.0, plus_l, plus_r));
-    let a_minus = math_func::tuple_max((0.0, -minus_l, -minus_r));
-
-    let hll_0 = ((a_plus * f_l.0) + (a_minus * f_r.0) - (a_plus * a_minus * (u_r.0 - u_l.0))) / (a_minus + a_plus);
-    let hll_1 = ((a_plus * f_l.1) + (a_minus * f_r.1) - (a_plus * a_minus * (u_r.1 - u_l.1))) / (a_minus + a_plus);
-    let hll_2 = ((a_plus * f_l.2) + (a_minus * f_r.2) - (a_plus * a_minus * (u_r.2 - u_l.2))) / (a_minus + a_plus);
-    let hll_3 = ((a_plus * f_l.3) + (a_minus * f_r.3) - (a_plus * a_minus * (u_r.3 - u_l.3))) / (a_minus + a_plus);
-    let hll_4 = ((a_plus * f_l.4) + (a_minus * f_r.4) - (a_plus * a_minus * (u_r.4 - u_l.4))) / (a_minus + a_plus);
-    let hll_5 = ((a_plus * f_l.5) + (a_minus * f_r.5) - (a_plus * a_minus * (u_r.5 - u_l.5))) / (a_minus + a_plus);
-    let hll_6 = ((a_plus * f_l.6) + (a_minus * f_r.6) - (a_plus * a_minus * (u_r.6 - u_l.6))) / (a_minus + a_plus);
-    let hll_7 = ((a_plus * f_l.7) + (a_minus * f_r.7) - (a_plus * a_minus * (u_r.7 - u_l.7))) / (a_minus + a_plus);
-    let hll = (hll_0, hll_1, hll_2, hll_3, hll_4, hll_5, hll_6, hll_7);
-    hll
-}
-
-/// Input:
-/// Output:
-/// Description:
-fn godonov_x(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f64, plm: bool) -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
-    let mut go_vec = Vec::new();
-    if plm == false {
-        go_vec.push(hll_flux_x(prims_vec[0], prims_vec[1], a_index));
-        for i in 1..((prims_vec.len()) as usize) {
-            let go_fill = hll_flux_x(prims_vec[i-1], prims_vec[i], a_index);
-            go_vec.push(go_fill);
+fn godonov_y_2d(prims: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>>, x_zone: usize, y_zone: usize, a_index: f64) -> Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>> {
+    let mut go_vec: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>> = Vec::new();
+    for i in 0..x_zone {
+        let mut go_fill: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> = Vec::new();
+        go_fill.push(hll_flux_y(prims[i][y_zone-1], prims[i][0], a_index));
+        for j in 1..y_zone {
+            go_fill.push(hll_flux_y(prims[i][j-1], prims[i][j], a_index));
         }
-        go_vec.push(hll_flux_x(prims_vec[(prims_vec.len() - 2) as usize], prims_vec[(prims_vec.len() - 1) as usize], a_index));
-    } else {
-        go_vec.push(hll_flux_x_plm(prims_vec[0], prims_vec[1], prims_vec[2], prims_vec[3], a_index));
-        for i in 1..((prims_vec.len() - 2) as usize) {
-            let go_fill = hll_flux_x_plm(prims_vec[i-1], prims_vec[i], prims_vec[i+1], prims_vec[i+2], a_index);
-            go_vec.push(go_fill);
-        }
-        go_vec.push(hll_flux_x_plm(prims_vec[(prims_vec.len() - 4) as usize], prims_vec[(prims_vec.len() - 3) as usize], prims_vec[(prims_vec.len() - 2) as usize], prims_vec[(prims_vec.len() - 1) as usize], a_index));
+        go_fill.push(hll_flux_y(prims[i][y_zone-1], prims[i][0], a_index));
+        go_vec.push(go_fill);
     }
     go_vec
 }
 
-
 /// Input:
 /// Output:
 /// Description:
-fn l_function_1D(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f64, plm: bool) -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
-    let mut new_cons_vec = Vec::new();
-    let go_vec = godonov_x(prims_vec.clone(), a_index, plm);
-    if plm == false {
-        let dx: f64 = 1.0 / (prims_vec.len() as f64);
-        for i in 0..((prims_vec.len()) as usize) {
-            let new_0 = - (go_vec[i+1].0 - go_vec[i].0) / dx;
-            let new_1 = - (go_vec[i+1].1 - go_vec[i].1) / dx;
-            let new_2 = - (go_vec[i+1].2 - go_vec[i].2) / dx;
-            let new_3 = - (go_vec[i+1].3 - go_vec[i].3) / dx;
-            let new_4 = - (go_vec[i+1].4 - go_vec[i].4) / dx;
-            let new_5 = - (go_vec[i+1].5 - go_vec[i].5) / dx;
-            let new_6 = - (go_vec[i+1].6 - go_vec[i].6) / dx;
-            let new_7 = - (go_vec[i+1].7 - go_vec[i].7) / dx;
-            let new_fill = (new_0, new_1, new_2, new_3, new_4, new_5, new_6, new_7);
-            new_cons_vec.push(new_fill);
+fn l_function_2d(prims: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>>, x_zone: usize, y_zone: usize, a_index: f64) -> Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>> {
+    let mut new_cons_vec: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>> = Vec::new();
+    let f_vec = godonov_x_2d(prims.clone(), x_zone, y_zone, a_index);
+    let g_vec = godonov_y_2d(prims.clone(), x_zone, y_zone, a_index);
+    let dx: f64 = 1.0 / (x_zone as f64);
+    let dy: f64 = 1.0 / (y_zone as f64);
+
+    for i in 0..x_zone {
+        let mut new_fill: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> = Vec::new();
+        for j in 0..y_zone {
+            let new_0 = - (f_vec[i+1][j].0 - f_vec[i][j].0) / dx - (g_vec[i][j+1].0 - g_vec[i][j].0) / dy;
+            let new_1 = - (f_vec[i+1][j].1 - f_vec[i][j].1) / dx - (g_vec[i][j+1].1 - g_vec[i][j].1) / dy;
+            let new_2 = - (f_vec[i+1][j].2 - f_vec[i][j].2) / dx - (g_vec[i][j+1].2 - g_vec[i][j].2) / dy;
+            let new_3 = - (f_vec[i+1][j].3 - f_vec[i][j].3) / dx - (g_vec[i][j+1].3 - g_vec[i][j].3) / dy;
+            let new_4 = - (f_vec[i+1][j].4 - f_vec[i][j].4) / dx - (g_vec[i][j+1].4 - g_vec[i][j].4) / dy;
+            let new_5 = - (f_vec[i+1][j].5 - f_vec[i][j].5) / dx - (g_vec[i][j+1].5 - g_vec[i][j].5) / dy;
+            let new_6 = - (f_vec[i+1][j].6 - f_vec[i][j].6) / dx - (g_vec[i][j+1].6 - g_vec[i][j].6) / dy;
+            let new_7 = - (f_vec[i+1][j].7 - f_vec[i][j].7) / dx - (g_vec[i][j+1].7 - g_vec[i][j].7) / dy;
+            new_fill.push((new_0, new_1, new_2, new_3, new_4, new_5, new_6, new_7));
         }
-    } else {
-        let dx: f64 = 1.0 / ((prims_vec.len() - 2) as f64);
-        new_cons_vec.push(cons_vec[0]);
-        for i in 1..((prims_vec.len() + 1) as usize) {
-            let new_0 = - (go_vec[i].0 - go_vec[i-1].0) / dx;
-            let new_1 = - (go_vec[i].1 - go_vec[i-1].1) / dx;
-            let new_2 = - (go_vec[i].2 - go_vec[i-1].2) / dx;
-            let new_3 = - (go_vec[i].3 - go_vec[i-1].3) / dx;
-            let new_4 = - (go_vec[i].4 - go_vec[i-1].4) / dx;
-            let new_5 = - (go_vec[i].5 - go_vec[i-1].5) / dx;
-            let new_6 = - (go_vec[i].6 - go_vec[i-1].6) / dx;
-            let new_7 = - (go_vec[i].7 - go_vec[i-1].7) / dx;
-            let new_fill = (new_0, new_1, new_2, new_3, new_4, new_5, new_6, new_7);
-            new_cons_vec.push(new_fill);
-        }
-        new_cons_vec.push(cons_vec[(prims_vec.len() + 1) as usize])
+        new_cons_vec.push(new_fill);
     }
     new_cons_vec
 }
@@ -336,19 +285,22 @@ fn l_function_1D(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_
 /// Input:
 /// Output:
 /// Description:
-fn euler_timestep(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, a_index: f64, dt: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
-    let l_cons = l_function_1D(prims_vec.clone(), cons_vec.clone(), a_index, false);
-    let mut new_cons_vec = Vec::new();
-    for i in 0..(prims_vec.len() as usize) {
-        let fill_0 = cons_vec[i].0 + dt * l_cons[i].0;
-        let fill_1 = cons_vec[i].1 + dt * l_cons[i].1;
-        let fill_2 = cons_vec[i].2 + dt * l_cons[i].2;
-        let fill_3 = cons_vec[i].3 + dt * l_cons[i].3;
-        let fill_4 = cons_vec[i].4 + dt * l_cons[i].4;
-        let fill_5 = cons_vec[i].5 + dt * l_cons[i].5;
-        let fill_6 = cons_vec[i].6 + dt * l_cons[i].6;
-        let fill_7 = cons_vec[i].7 + dt * l_cons[i].7;
-        let fill = (fill_0, fill_1, fill_2, fill_3, fill_4, fill_5, fill_6, fill_7);
+fn euler_timestep_2d(prims_vec: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>>, cons_vec: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>>, x_zone: usize, y_zone: usize, a_index: f64, dt: f64) -> Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>> {
+    let l_cons = l_function_2d(prims_vec.clone(), x_zone, y_zone, a_index);
+    let mut new_cons_vec: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>> = Vec::new();
+    for i in 0..x_zone {
+        let mut fill: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> = Vec::new();
+        for j in 0..y_zone {
+            let fill_0 = cons_vec[i][j].0 + dt * l_cons[i][j].0;
+            let fill_1 = cons_vec[i][j].1 + dt * l_cons[i][j].1;
+            let fill_2 = cons_vec[i][j].2 + dt * l_cons[i][j].2;
+            let fill_3 = cons_vec[i][j].3 + dt * l_cons[i][j].3;
+            let fill_4 = cons_vec[i][j].4 + dt * l_cons[i][j].4;
+            let fill_5 = cons_vec[i][j].5 + dt * l_cons[i][j].5;
+            let fill_6 = cons_vec[i][j].6 + dt * l_cons[i][j].6;
+            let fill_7 = cons_vec[i][j].7 + dt * l_cons[i][j].7;
+            fill.push((fill_0, fill_1, fill_2, fill_3, fill_4, fill_5, fill_6, fill_7));
+        }
         new_cons_vec.push(fill);
     }
     new_cons_vec
@@ -357,68 +309,7 @@ fn euler_timestep(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons
 /// Input:
 /// Output:
 /// Description:
-//fn rk4_step(prims_vec: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, cons_vec: Vec<(f64, f64, f64, f64, f64, f64, f64)>, dt: f64) -> Vec<(f64, f64, f64, f64, f64, f64, f64)> {
-//    let l_cons = l_function(prims_vec.clone(), cons_vec.clone());
-//    let mut cons_1 = Vec::new();
-//    cons_1.push(cons_vec[0]);
-//    for i in 1..((CELL_NUM + 1.0) as u64) {
-//        let index_a: usize = (i).try_into().unwrap();
-//        let fill_0 = cons_vec[index_a].0 + dt * l_cons[index_a].0;
-//        let fill_1 = cons_vec[index_a].1 + dt * l_cons[index_a].1;
-//        let fill_2 = cons_vec[index_a].2 + dt * l_cons[index_a].2;
-//        let fill_3 = cons_vec[index_a].3 + dt * l_cons[index_a].3;
-//        let fill_4 = cons_vec[index_a].4 + dt * l_cons[index_a].4;
-//        let fill_5 = cons_vec[index_a].5 + dt * l_cons[index_a].5;
-//        let fill_6 = cons_vec[index_a].6 + dt * l_cons[index_a].6;
-//        let fill = (fill_0, fill_1, fill_2, fill_3, fill_4, fill_5, fill_6);
-//        cons_1.push(fill);
-//    }
-//    let b = (CELL_NUM + 1.0) as u64;
-//    let index_b: usize = (b).try_into().unwrap();
-//    cons_1.push(cons_vec[index_b]);
-
-//    let prims_1 = prim_vec_from_cons(cons_1.clone(), ADIABATIC, BX);
-//    let l_cons_1 = l_function(prims_1.clone(), cons_1.clone());
-//    let mut cons_2 = Vec::new();
-//    cons_2.push(cons_vec[0]);
-//    for i in 1..((CELL_NUM + 1.0) as u64) {
-//        let index_c: usize = (i).try_into().unwrap();
-//        let fill_0 = 0.75 * cons_vec[index_c].0 + 0.25 * cons_1[index_c].0 + 0.25 * dt * l_cons_1[index_c].0;
-//        let fill_1 = 0.75 * cons_vec[index_c].1 + 0.25 * cons_1[index_c].1 + 0.25 * dt * l_cons_1[index_c].1;
-//        let fill_2 = 0.75 * cons_vec[index_c].2 + 0.25 * cons_1[index_c].2 + 0.25 * dt * l_cons_1[index_c].2;
-//        let fill_3 = 0.75 * cons_vec[index_c].3 + 0.25 * cons_1[index_c].3 + 0.25 * dt * l_cons_1[index_c].3;
-//        let fill_4 = 0.75 * cons_vec[index_c].4 + 0.25 * cons_1[index_c].4 + 0.25 * dt * l_cons_1[index_c].4;
-//        let fill_5 = 0.75 * cons_vec[index_c].5 + 0.25 * cons_1[index_c].5 + 0.25 * dt * l_cons_1[index_c].5;
-//        let fill_6 = 0.75 * cons_vec[index_c].6 + 0.25 * cons_1[index_c].6 + 0.25 * dt * l_cons_1[index_c].6;
-//        let fill = (fill_0, fill_1, fill_2, fill_3, fill_4, fill_5, fill_6);
-//        cons_2.push(fill);
-//    }
-//    cons_2.push(cons_vec[index_b]);
-
-//    let prims_2 = prim_vec_from_cons(cons_1.clone(), ADIABATIC, BX);
-//    let l_cons_2 = l_function(prims_2.clone(), cons_2.clone());
-//    let mut new_cons = Vec::new();
-//    new_cons.push(cons_vec[0]);
-//    for i in 1..((CELL_NUM + 1.0) as u64) {
-//        let index_d: usize = (i).try_into().unwrap();
-//        let fill_0 = 0.33 * cons_vec[index_d].0 + 0.67 * cons_2[index_d].0 + 0.67 * dt * l_cons_2[index_d].0;
-//        let fill_1 = 0.33 * cons_vec[index_d].1 + 0.67 * cons_2[index_d].1 + 0.67 * dt * l_cons_2[index_d].1;
-//        let fill_2 = 0.33 * cons_vec[index_d].2 + 0.67 * cons_2[index_d].2 + 0.67 * dt * l_cons_2[index_d].2;
-//        let fill_3 = 0.33 * cons_vec[index_d].3 + 0.67 * cons_2[index_d].3 + 0.67 * dt * l_cons_2[index_d].3;
-//        let fill_4 = 0.33 * cons_vec[index_d].4 + 0.67 * cons_2[index_d].4 + 0.67 * dt * l_cons_2[index_d].4;
-//        let fill_5 = 0.33 * cons_vec[index_d].5 + 0.67 * cons_2[index_d].5 + 0.67 * dt * l_cons_2[index_d].5;
-//        let fill_6 = 0.33 * cons_vec[index_d].6 + 0.67 * cons_2[index_d].6 + 0.67 * dt * l_cons_2[index_d].6;
-//        let fill = (fill_0, fill_1, fill_2, fill_3, fill_4, fill_5, fill_6);
-//        new_cons.push(fill);
-//    }
-//    new_cons.push(cons_vec[index_b]);
-//    new_cons
-//}
-
-/// Input:
-/// Output:
-/// Description:
-fn write_checkpoint(prims: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, t: f64, check_count: i8, plm: bool) -> Result<(), Box<dyn std::error::Error>> {
+fn write_checkpoint_2d(prims: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>>, x_zone: usize, y_zone: usize, t: f64, check_count: i8) -> Result<(), Box<dyn std::error::Error>> {
     let file_num = check_count.to_string();
     let file_type = ".txt".to_string();
     let file_name = format!("{}{}", file_num, file_type);
@@ -439,17 +330,12 @@ fn write_checkpoint(prims: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, t: f64
     let mut bz_string = "Bz: ".to_string();
 
     let mut prims_fill = Vec::new();
-    if plm == true{
-        for i in 1..((prims.len()+1) as usize) {
-            prims_fill.push(prims[i]);
-        }
-    } else {
-        for i in 0..((prims.len()-1) as usize) {
-            prims_fill.push(prims[i]);
-        }
+    for i in 0..x_zone {
+        for j in 0..y_zone {
+            prims_fill.push(prims[i][j]);
+        }        
     }
     
-
     for i in prims_fill {
         let p_fill = i.0.to_string() + &" ".to_string();
         p_string.push_str(&p_fill);
@@ -502,8 +388,8 @@ fn write_checkpoint(prims: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>, t: f64
 // Simulation
 ///////////////
 fn main() {
-    let phys = Physics{adiabatic_index: 2.0, p: (1.0, 0.1), rho: (1.0, 0.125), vx: (0.0, 0.0), vy: (0.0, 0.0), vz: (0.0, 0.0), bx: (0.75, 0.75), by: (1.0, -1.0), bz: (0.0, 0.0)};
-    let drive = Driver{cfl: 0.8, tfinal: 0.401, checkpoint: 0.0125, num_zones_x: 800, num_zones_y: 10, discontinuity: 0.5, dimensionality: "1D".to_string(), plm: false, grid_type: "Cartesian".to_string()};
+    let phys = Physics{adiabatic_index: 1.4, p: (2.5, 2.5), rho: (2.0, 1.0), vx: (0.5, -0.5), vy: (0.0, 0.0), vz: (0.0, 0.0), bx: (1.772, 1.772), by: (0.0, 0.0), bz: (0.0, 0.0)};
+    let drive = Driver{cfl: 0.4, tfinal: 1.001, checkpoint: 0.0125, num_zones_x: 128, num_zones_y: 128, discontinuity: 0.25, dimensionality: "2D".to_string(), plm: false, grid_type: "Cartesian".to_string()};
 
     let before = Instant::now();
 
@@ -516,32 +402,28 @@ fn main() {
     let mut time_step_count: f64 = 0.0;
     let mut check_count: i8 = 0;
 
-    let initial_primitives = init_prims_1D(&phys, drive.num_zones_x, drive.discontinuity, drive.plm);
-    let mut conserved_vec = cons_vec_from_prim(initial_primitives.clone(), phys.adiabatic_index);
-    //let test_val = l_function_1D(initial_primitives, conserved_vec, phys.adiabatic_index, drive.plm);
-    //println!("{:?}", test_val);
+    let initial_primitives = init_prims_2d(&phys, &drive);
+    let mut conserved_vec = cons_vec_from_prim_2d(initial_primitives.clone(), drive.num_zones_x, drive.num_zones_y, phys.adiabatic_index);
 
     while t < drive.tfinal {
-        let primitives = prim_vec_from_cons(conserved_vec.clone(), phys.adiabatic_index);
-        let conserve = cons_vec_from_prim(primitives.clone(), phys.adiabatic_index);
+        let primitives = prim_vec_from_cons_2d(conserved_vec.clone(), drive.num_zones_x, drive.num_zones_y, phys.adiabatic_index);
+        let conserve = cons_vec_from_prim_2d(primitives.clone(), drive.num_zones_x, drive.num_zones_y, phys.adiabatic_index);
         
         let mut dt = 1.0;
-        for i in 0..((initial_primitives.len() - 1) as usize) {
-            let dt_check = math_func::compute_time_step(primitives[i], primitives[i+1], phys.adiabatic_index, 1.0 / (initial_primitives.len() as f64));
-            if dt_check < dt {
-                dt = dt_check; 
+        for i in 0..(drive.num_zones_x-1) {
+            for j in 0..(drive.num_zones_y-1) {
+                let dt_check = math_func::compute_time_step(primitives[i][j], primitives[i+1][j], phys.adiabatic_index, 1.0 / (drive.num_zones_x as f64));
+                if dt_check < dt {
+                    dt = dt_check; 
+                    }
                 }
             }
         dt = drive.cfl * dt;
         
-        if drive.plm == true {
-            //conserved_vec = rk4_step(primitives.clone(), conserve, dt);
-        } else {
-            conserved_vec = euler_timestep(primitives.clone(), conserve, phys.adiabatic_index, dt);
-        }
+        conserved_vec = euler_timestep_2d(primitives.clone(), conserve, drive.num_zones_x, drive.num_zones_y, phys.adiabatic_index, dt);
 
         if t >= t_checkpoint {
-            let _ = write_checkpoint(primitives.clone(), t, check_count, drive.plm);
+            let _ = write_checkpoint_2d(primitives.clone(), drive.num_zones_x, drive.num_zones_y, t, check_count);
             t_checkpoint += drive.checkpoint;
             check_count += 1;
             }

@@ -1,19 +1,23 @@
-Adiabatic_Index   2.0
-Pressure          1.0    0.1
-Density           1.0    0.125
-Velocity_x        0.0    0.0
+Adiabatic_Index   1.4
+Pressure          2.5    2.5
+Density           2.0    1.0
+Velocity_x        0.5    -0.5
 Velocity_y        0.0    0.0
 Velocity_z        0.0    0.0
-Magnetic_x        0.75   0.75
-Magnetic_y        1.0    -1.0
+Magnetic_x        1.772  1.772
+Magnetic_y        0.0    0.0
 Magnetic_z        0.0    0.0
 
-CFL                     0.8
-Tfinal                  0.401
-Checkpoint              0.0125
-Cell_Number             800
-Discontinuity           0.5
+CFL                         0.4
+Tfinal                      1.001
+Checkpoint                  0.0125
+Cell_Number_x               128
+Cell_Number_y               128
+Cell_Number_z               0
+Discontinuity               0.25
+Discontinuity_Direction     absolute y
 
-Dimension      1D
-Coordinates    Cartesian
-Scheme         First_Order
+Dimension                   2D
+Coordinates                 Cartesian
+Scheme                      First_Order
+Boundary_Conditions         Periodic

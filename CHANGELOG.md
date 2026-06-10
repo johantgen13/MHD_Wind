@@ -1,3 +1,16 @@
+ ## June 9 2026
+ - Updated the CHANGELOG file.
+ - Updated the config file.
+ - Began 2D Newtonian MHD.
+ - Wrote the following functions:
+   - 
+ 
+ ## June 4 2026
+ - Updated the CHANGELOG file.
+ - Updated the config file.
+ - Wrote the following functions:
+   - radius (location: simple/math_func.rs)
+ 
  ## June 2 2026
  - Updated the CHANGELOG file.
  - Documentation was written for these functions:
