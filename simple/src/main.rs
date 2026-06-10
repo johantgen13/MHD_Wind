@@ -318,7 +318,8 @@ fn write_checkpoint_2d(prims: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>>
 
     let t_fill = format!("{} {}", "t:".to_string(), &(t.to_string()+&" ".to_string()));
 
-    let num_fill = format!("{} {}", "cell_num:".to_string(), &(prims.len().to_string()+&" ".to_string()));
+    let num_fill_x = format!("{} {}", "cell_num_x:".to_string(), &(x_zone.to_string()+&" ".to_string()));
+    let num_fill_y = format!("{} {}", "cell_num_y:".to_string(), &(y_zone.to_string()+&" ".to_string()));
 
     let mut p_string = "p: ".to_string();
     let mut rho_string = "rho: ".to_string();
@@ -369,7 +370,8 @@ fn write_checkpoint_2d(prims: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>>
 
     let mut writer = BufWriter::new(file);
 
-    writeln!(writer, "{}", num_fill)?;
+    writeln!(writer, "{}", num_fill_x)?;
+    writeln!(writer, "{}", num_fill_y)?;
     writeln!(writer, "{}", t_fill)?;
     writeln!(writer, "{}", p_string)?;
     writeln!(writer, "{}", rho_string)?;
@@ -389,7 +391,7 @@ fn write_checkpoint_2d(prims: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>>
 ///////////////
 fn main() {
     let phys = Physics{adiabatic_index: 1.4, p: (2.5, 2.5), rho: (2.0, 1.0), vx: (0.5, -0.5), vy: (0.0, 0.0), vz: (0.0, 0.0), bx: (1.772, 1.772), by: (0.0, 0.0), bz: (0.0, 0.0)};
-    let drive = Driver{cfl: 0.4, tfinal: 1.001, checkpoint: 0.0125, num_zones_x: 128, num_zones_y: 128, discontinuity: 0.25, dimensionality: "2D".to_string(), plm: false, grid_type: "Cartesian".to_string()};
+    let drive = Driver{cfl: 0.4, tfinal: 5.001, checkpoint: 0.0125, num_zones_x: 512, num_zones_y: 512, discontinuity: 0.25, dimensionality: "2D".to_string(), plm: false, grid_type: "Cartesian".to_string()};
 
     let before = Instant::now();
 
