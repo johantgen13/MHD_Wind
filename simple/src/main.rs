@@ -206,51 +206,51 @@ fn hll_flux_y(prim_1: Cell, prim_2: Cell, prim_3: Cell, prim_4: Cell, a_index: f
 /// Input:
 /// Output:
 /// Description:
-fn godonov_x(prims: Vec<Cell>, x_zone: usize, y_zone: usize, a_index: f64) -> Vec<Cell> {
-    let mut go_x = vec![(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0); x_zone+1];
-    
+fn godonov_x(prims: Vec<Cell>, x_zone: usize, y_zone: usize, a_index: f64) ->  Vec<Cell> {
+    let mut go_x = vec![(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0); (x_zone+1)*y_zone];
+    for i in 0..(x_zone+1) {
+        for j in 0..y_zone {
+            let ind = index(i, j, y_zone);
+            if i == 0 {
+                go_x[ind] = hll_flux_x(prims[(x_zone-2)*y_zone +j], prims[(x_zone-1)*y_zone +j], prims[j], prims[j + y_zone], a_index);
+            } else if i == 1 {
+                go_x[ind] = hll_flux_x(prims[(x_zone-1)*y_zone +j], prims[j], prims[j+y_zone], prims[j+2*y_zone], a_index);
+            } else if i < (x_zone - 1) {
+                go_x[ind] = hll_flux_x(prims[(i-2)*y_zone + j], prims[(i-1)*y_zone + j], prims[i*y_zone + j], prims[(i+1)*y_zone + j], a_index);
+            } else if i == (x_zone - 1) {
+                go_x[ind] = hll_flux_x(prims[(i-2)*y_zone + j], prims[(i-1)*y_zone + j], prims[i*y_zone + j], prims[j], a_index);
+            } else {
+                go_x[ind] = hll_flux_x(prims[(x_zone-2)*y_zone +j], prims[(x_zone-1)*y_zone +j], prims[j], prims[j + y_zone], a_index);
+            }
+        }
+    }
+    go_x
 }
 
-
 /// Input:
 /// Output:
 /// Description:
-//fn godonov_x_2d(prims: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>>, x_zone: usize, y_zone: usize, a_index: f64) -> Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>> {
-//    let mut go_vec: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>> = Vec::new();
-//    let mut go: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> = Vec::new();
-//    let mut count: usize = 0;
-//    while count < y_zone {
-//        go.push(hll_flux_x(prims[x_zone-1][count], prims[0][count], a_index));
-//        count += 1;
-//    }
-//    go_vec.push(go.clone());
-//    for i in 1..x_zone {
-//        let mut go_fill: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> = Vec::new();
-//        for j in 0..y_zone {
-//            go_fill.push(hll_flux_x(prims[i-1][j], prims[i][j], a_index));
-//        }
-//        go_vec.push(go_fill);
-//    }
-//    go_vec.push(go);
-//    go_vec
-//}
+fn godonov_y(prims: Vec<Cell>, x_zone: usize, y_zone: usize, a_index: f64) -> Vec<Cell> {
+    let mut go_y = vec![(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0); (y_zone+1)*x_zone];
+    for i in 0..x_zone {
+        for j in 0..(y_zone+1) {
+            let ind = index(i,j,y_zone+1);
+            if j == 0 {
+                go_y[ind] = hll_flux_y(prims[(y_zone-2)+i*y_zone], prims[(y_zone-1)+i*y_zone], prims[i*y_zone], prims[1+i*y_zone], a_index);
+            } else if j == 1 {
+                go_y[ind] = hll_flux_y(prims[(y_zone-1)+i*y_zone], prims[i*y_zone], prims[1+i*y_zone], prims[2+i*y_zone], a_index);
+            } else if j < (y_zone - 1) {
+                go_y[ind] = hll_flux_y(prims[(j-2)+i*y_zone], prims[(j-1)+i*y_zone], prims[j+i*y_zone], prims[(j+1)+i*y_zone], a_index);
+            } else if j == (y_zone - 1) {
+                go_y[ind] = hll_flux_y(prims[(j-1)+i*y_zone], prims[j+i*y_zone], prims[i*y_zone], prims[1+i*y_zone], a_index);
+            } else {
+                go_y[ind] = hll_flux_y(prims[(y_zone-2)+i*y_zone], prims[(y_zone-1)+i*y_zone], prims[i*y_zone], prims[1+i*y_zone], a_index);
+            }
+        }
+    }
+    go_y
+}
 
-/// Input:
-/// Output:
-/// Description:
-//fn godonov_y_2d(prims: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>>, x_zone: usize, y_zone: usize, a_index: f64) -> Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>> {
-//    let mut go_vec: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>> = Vec::new();
-//    for i in 0..x_zone {
-//        let mut go_fill: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> = Vec::new();
-//        go_fill.push(hll_flux_y(prims[i][y_zone-1], prims[i][0], a_index));
-//        for j in 1..y_zone {
-//            go_fill.push(hll_flux_y(prims[i][j-1], prims[i][j], a_index));
-//        }
-//        go_fill.push(hll_flux_y(prims[i][y_zone-1], prims[i][0], a_index));
-//        go_vec.push(go_fill);
-//    }
-//    go_vec
-//}
 
 /// Input:
 /// Output:
@@ -276,30 +276,6 @@ fn godonov_x(prims: Vec<Cell>, x_zone: usize, y_zone: usize, a_index: f64) -> Ve
 //            new_fill.push((new_0, new_1, new_2, new_3, new_4, new_5, new_6, new_7));
 //        }
 //        new_cons_vec.push(new_fill);
-//    }
-//    new_cons_vec
-//}
-
-/// Input:
-/// Output:
-/// Description:
-//fn euler_timestep_2d(prims_vec: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>>, cons_vec: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>>, x_zone: usize, y_zone: usize, a_index: f64, dt: f64) -> Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>> {
-//    let l_cons = l_function_2d(prims_vec.clone(), x_zone, y_zone, a_index);
-//    let mut new_cons_vec: Vec<Vec<(f64, f64, f64, f64, f64, f64, f64, f64)>> = Vec::new();
-//    for i in 0..x_zone {
-//        let mut fill: Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> = Vec::new();
-//        for j in 0..y_zone {
-//            let fill_0 = cons_vec[i][j].0 + dt * l_cons[i][j].0;
-//            let fill_1 = cons_vec[i][j].1 + dt * l_cons[i][j].1;
-//            let fill_2 = cons_vec[i][j].2 + dt * l_cons[i][j].2;
-//            let fill_3 = cons_vec[i][j].3 + dt * l_cons[i][j].3;
-//            let fill_4 = cons_vec[i][j].4 + dt * l_cons[i][j].4;
-//            let fill_5 = cons_vec[i][j].5 + dt * l_cons[i][j].5;
-//            let fill_6 = cons_vec[i][j].6 + dt * l_cons[i][j].6;
-//            let fill_7 = cons_vec[i][j].7 + dt * l_cons[i][j].7;
-//            fill.push((fill_0, fill_1, fill_2, fill_3, fill_4, fill_5, fill_6, fill_7));
-//        }
-//        new_cons_vec.push(fill);
 //    }
 //    new_cons_vec
 //}
@@ -450,7 +426,7 @@ fn godonov_x(prims: Vec<Cell>, x_zone: usize, y_zone: usize, a_index: f64) -> Ve
 ///////////////
 fn main() {
     let phys = Physics{adiabatic_index: 1.4, p: (2.5, 2.5), rho: (2.0, 1.0), vx: (0.5, -0.5), vy: (0.0, 0.0), vz: (0.0, 0.0), bx: (1.772, 1.772), by: (0.0, 0.0), bz: (0.0, 0.0)};
-    let drive = Driver{cfl: 0.1, tfinal: 1.001, checkpoint: 0.0125, num_zones_x: 8, num_zones_y: 8, discontinuity: 0.25, dimensionality: "2D".to_string(), plm: false, grid_type: "Cartesian".to_string()};
+    let drive = Driver{cfl: 0.1, tfinal: 1.001, checkpoint: 0.0125, num_zones_x: 6, num_zones_y: 6, discontinuity: 0.25, dimensionality: "2D".to_string(), plm: false, grid_type: "Cartesian".to_string()};
 
 //    let before = Instant::now();
 
@@ -465,7 +441,7 @@ fn main() {
 
     let initial_primitives = init_prims_2d(&phys, &drive);
     let mut conserved_vec = cons_vec_from_prim_2d(initial_primitives.clone(), drive.num_zones_x, drive.num_zones_y, phys.adiabatic_index);
-    let test_val = hll_flux_y(initial_primitives[0], initial_primitives[1], initial_primitives[2], initial_primitives[3], phys.adiabatic_index);
+    let test_val = godonov_y(initial_primitives, drive.num_zones_x, drive.num_zones_y, phys.adiabatic_index);
     println!("{:?}", test_val);
 
 //    while t < drive.tfinal {
